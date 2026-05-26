@@ -1,0 +1,19 @@
+{
+  "name": "lexlatam-taxonomy-tooling",
+  "version": "1.0.0",
+  "description": "Build tooling for the LexLatam Gaceta Oficial taxonomy (codegen + validation).",
+  "private": true,
+  "type": "module",
+  "author": "Invariant Engineering LLC <contact@invariantengineering.com>",
+  "license": "SEE LICENSE IN LICENSE",
+  "packageManager": "pnpm@9.14.4",
+  "scripts": {
+    "validate": "tsx scripts/validate.ts",
+    "generate": "tsx scripts/generate.ts"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

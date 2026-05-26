@@ -1,0 +1,18 @@
+# Node
+node_modules/
+typescript/dist/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+python/dist/
+*.egg-info/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+
+# Claude Code local settings
+.claude/settings.local.json

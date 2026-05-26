@@ -1,0 +1,93 @@
+name: Publish
+
+# Triggered by a release tag `vX.Y.Z`. The tag MUST match the "version" field
+# in data/document-types.json and the version of both packages.
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  verify-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify tag matches taxonomy + package versions
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          DATA_VERSION=$(node -p "require('./data/document-types.json').version")
+          NPM_VERSION=$(node -p "require('./typescript/package.json').version")
+          PY_VERSION=$(grep -m1 '^version' python/pyproject.toml | sed -E 's/.*"(.*)".*/\1/')
+          echo "tag=$TAG data=$DATA_VERSION npm=$NPM_VERSION python=$PY_VERSION"
+          fail=0
+          for pair in "data:$DATA_VERSION" "npm:$NPM_VERSION" "python:$PY_VERSION"; do
+            if [ "${pair#*:}" != "$TAG" ]; then
+              echo "::error::Version mismatch — tag is v$TAG but ${pair%%:*} is ${pair#*:}"
+              fail=1
+            fi
+          done
+          exit $fail
+
+  publish-npm:
+    needs: verify-version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node for GitHub Packages
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@lexlatam-ai"
+
+      - name: Install and build
+        working-directory: typescript
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run build
+
+      - name: Publish @lexlatam-ai/taxonomy to GitHub Packages
+        working-directory: typescript
+        run: pnpm publish --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-python:
+    needs: verify-version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Poetry
+        run: pipx install "poetry>=2.0,<3.0"
+
+      - name: Build wheel + sdist
+        working-directory: python
+        run: poetry build
+
+      # GitHub Packages has no Python registry, so the Python package is
+      # distributed via the git tag. The built artifacts are attached to the
+      # GitHub Release for convenience; consumers install with a pip git URL
+      # (see README "Consuming this package").
+      - name: Attach artifacts to the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" python/dist/* \
+            --title "$GITHUB_REF_NAME" \
+            --notes "LexLatam taxonomy ${GITHUB_REF_NAME}." \
+            || gh release upload "$GITHUB_REF_NAME" python/dist/* --clobber

@@ -1,0 +1,120 @@
+{
+  "version": "1.1.0",
+  "types": {
+    "law": { "label_es": "Ley", "label_en": "Law" },
+    "decree": { "label_es": "Decreto", "label_en": "Decree" },
+    "resolution": { "label_es": "Resolución", "label_en": "Resolution" },
+    "agreement": { "label_es": "Acuerdo", "label_en": "Agreement" },
+    "resuelto": { "label_es": "Resuelto", "label_en": "Resuelto" },
+    "notice": { "label_es": "Aviso", "label_en": "Notice" },
+    "circular": { "label_es": "Circular", "label_en": "Circular" },
+    "contract": { "label_es": "Contrato", "label_en": "Contract" },
+    "acta": { "label_es": "Acta", "label_en": "Minutes" },
+    "addendum": { "label_es": "Adenda", "label_en": "Addendum" },
+    "code": { "label_es": "Código", "label_en": "Code" },
+    "constitution": { "label_es": "Constitución", "label_en": "Constitution" },
+    "unknown": { "label_es": "Desconocido", "label_en": "Unknown" }
+  },
+  "subtypes": {
+    "executive_decree": {
+      "parent": "decree",
+      "label_es": "Decreto Ejecutivo",
+      "label_en": "Executive Decree"
+    },
+    "decree_law": {
+      "parent": "decree",
+      "label_es": "Decreto Ley",
+      "label_en": "Decree-Law"
+    },
+    "cabinet_decree": {
+      "parent": "decree",
+      "label_es": "Decreto de Gabinete",
+      "label_en": "Cabinet Decree"
+    },
+    "mayoral_decree": {
+      "parent": "decree",
+      "label_es": "Decreto Alcaldicio",
+      "label_en": "Mayoral Decree"
+    },
+    "personnel_decree": {
+      "parent": "decree",
+      "label_es": "Decreto de Personal",
+      "label_en": "Personnel Decree"
+    },
+    "other_decree": {
+      "parent": "decree",
+      "label_es": "Otro Decreto",
+      "label_en": "Other Decree"
+    },
+    "cabinet_resolution": {
+      "parent": "resolution",
+      "label_es": "Resolución de Gabinete",
+      "label_en": "Cabinet Resolution"
+    },
+    "administrative_resolution": {
+      "parent": "resolution",
+      "label_es": "Resolución Administrativa",
+      "label_en": "Administrative Resolution"
+    },
+    "ministerial_resolution": {
+      "parent": "resolution",
+      "label_es": "Resolución Ministerial",
+      "label_en": "Ministerial Resolution"
+    },
+    "superintendency_resolution": {
+      "parent": "resolution",
+      "label_es": "Resolución de Superintendencia",
+      "label_en": "Superintendency Resolution"
+    },
+    "board_resolution": {
+      "parent": "resolution",
+      "label_es": "Resolución de Junta Directiva",
+      "label_en": "Board Resolution"
+    },
+    "other_resolution": {
+      "parent": "resolution",
+      "label_es": "Otra Resolución",
+      "label_en": "Other Resolution"
+    },
+    "municipal_agreement": {
+      "parent": "agreement",
+      "label_es": "Acuerdo Municipal",
+      "label_en": "Municipal Agreement"
+    },
+    "other_agreement": {
+      "parent": "agreement",
+      "label_es": "Otro Acuerdo",
+      "label_en": "Other Agreement"
+    }
+  },
+  "mappings": {
+    "Ley": { "type": "law", "subtype": null },
+    "Decreto": { "type": "decree", "subtype": null },
+    "Decreto Ejecutivo": { "type": "decree", "subtype": "executive_decree" },
+    "Decreto Ley": { "type": "decree", "subtype": "decree_law" },
+    "Decreto de Gabinete": { "type": "decree", "subtype": "cabinet_decree" },
+    "Decreto Alcaldicio": { "type": "decree", "subtype": "mayoral_decree" },
+    "Decreto de Personal": { "type": "decree", "subtype": "personnel_decree" },
+    "Resolución": { "type": "resolution", "subtype": null },
+    "Resolución de Gabinete": { "type": "resolution", "subtype": "cabinet_resolution" },
+    "Resolución Administrativa": { "type": "resolution", "subtype": "administrative_resolution" },
+    "Resolución Ministerial": { "type": "resolution", "subtype": "ministerial_resolution" },
+    "Resolución S.B.P.": { "type": "resolution", "subtype": "superintendency_resolution" },
+    "Resolución SBP": { "type": "resolution", "subtype": "superintendency_resolution" },
+    "Resolución de Junta Directiva": { "type": "resolution", "subtype": "board_resolution" },
+    "Resolución J.D.": { "type": "resolution", "subtype": "board_resolution" },
+    "Acuerdo": { "type": "agreement", "subtype": null },
+    "Acuerdo Municipal": { "type": "agreement", "subtype": "municipal_agreement" },
+    "Resuelto": { "type": "resuelto", "subtype": null },
+    "Aviso": { "type": "notice", "subtype": null },
+    "Circular": { "type": "circular", "subtype": null },
+    "Contrato": { "type": "contract", "subtype": null },
+    "Acta": { "type": "acta", "subtype": null },
+    "Adenda": { "type": "addendum", "subtype": null }
+  },
+  "fallbacks": [
+    { "prefix": "Resolución", "type": "resolution", "subtype": "other_resolution" },
+    { "prefix": "Decreto", "type": "decree", "subtype": "other_decree" },
+    { "prefix": "Acuerdo", "type": "agreement", "subtype": "other_agreement" }
+  ]
+}

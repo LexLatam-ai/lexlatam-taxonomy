@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install tooling dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate data/document-types.json against schema
+        run: pnpm run validate
+
+      - name: Regenerate bindings
+        run: pnpm run generate
+
+      - name: Fail if committed generated files are stale
+        run: |
+          if ! git diff --exit-code; then
+            echo "::error::Generated bindings are out of date."
+            echo "Run 'pnpm run generate' and commit the result."
+            exit 1
+          fi
+
+      # --- Python package ---------------------------------------------------
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Poetry
+        run: pipx install "poetry>=2.0,<3.0"
+
+      - name: Install Python package
+        working-directory: python
+        run: poetry install --no-interaction
+
+      - name: Run Python tests
+        working-directory: python
+        run: poetry run pytest
+
+      # --- TypeScript package ----------------------------------------------
+      - name: Install TypeScript package
+        working-directory: typescript
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check TypeScript package
+        working-directory: typescript
+        run: pnpm run typecheck
+
+      - name: Build TypeScript package
+        working-directory: typescript
+        run: pnpm run build
+
+      - name: Run TypeScript tests
+        working-directory: typescript
+        run: pnpm test
