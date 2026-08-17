@@ -16,3 +16,7 @@ python/dist/
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Repository-local agent workspaces
+.scratch/
+.worktrees/
