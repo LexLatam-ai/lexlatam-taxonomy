@@ -1,0 +1,459 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/LexLatam-ai/lexlatam-taxonomy/blob/main/data/legal-source-reader/v1/schema.json",
+  "title": "LexLatam legal source reader V1 producer core",
+  "description": "Additive producer contract for legal-document identity, explicit official-source provenance, retrievable units, immutable PDF/transcription lineage, and risk-assessment state. It does not define database storage or a public API response.",
+  "type": "object",
+  "required": [
+    "contract_id",
+    "schema_version",
+    "legal_documents",
+    "source_mappings",
+    "legal_units"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "contract_id": { "const": "legal-source-reader/v1/core-bundle" },
+    "schema_version": { "const": "1.0.0" },
+    "legal_documents": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/legalDocument" }
+    },
+    "source_mappings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/legalDocumentSource" }
+    },
+    "legal_units": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/legalUnit" }
+    }
+  },
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "countryCode": {
+      "type": "string",
+      "description": "Lowercase ISO 3166-1 alpha-2 country code.",
+      "pattern": "^[a-z]{2}$"
+    },
+    "sourceCode": {
+      "type": "string",
+      "description": "Stable identifier for an official catalogue or publisher within a country.",
+      "pattern": "^[a-z][a-z0-9_-]*$"
+    },
+    "sourceNativeId": {
+      "type": "string",
+      "description": "Identifier assigned by the official source. Its meaning is scoped by country_code and source_code.",
+      "minLength": 1,
+      "pattern": ".*\\S.*"
+    },
+    "httpsUrl": {
+      "type": "string",
+      "pattern": "^https://[^\\s]+$"
+    },
+    "instrumentDate": {
+      "type": "object",
+      "required": ["value", "basis"],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "basis": {
+          "enum": ["official_instrument", "reviewed_catalogue"]
+        }
+      }
+    },
+    "publicationDate": {
+      "type": "object",
+      "required": ["value", "basis"],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "basis": {
+          "enum": ["official_gaceta", "reviewed_catalogue"]
+        }
+      }
+    },
+    "legalDocument": {
+      "type": "object",
+      "description": "Canonical legal-instrument metadata. law_uuid is independently assigned and must never be derived from source or processing fields.",
+      "required": [
+        "contract",
+        "law_uuid",
+        "country_code",
+        "canonical_source_mapping_id",
+        "document_type",
+        "document_subtype",
+        "document_number",
+        "title",
+        "issuer",
+        "instrument_date",
+        "publication_date",
+        "gaceta_number"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "contract": { "const": "legal_document" },
+        "law_uuid": { "$ref": "#/$defs/uuid" },
+        "country_code": { "$ref": "#/$defs/countryCode" },
+        "canonical_source_mapping_id": {
+          "description": "Reviewed provenance relationship governing the canonical identity and publication metadata.",
+          "$ref": "#/$defs/uuid"
+        },
+        "document_type": {
+          "type": "string",
+          "description": "Canonical identifier from data/document-types.json."
+        },
+        "document_subtype": {
+          "type": ["string", "null"],
+          "description": "Canonical subtype from data/document-types.json when applicable."
+        },
+        "document_number": {
+          "type": ["string", "null"]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": ".*\\S.*"
+        },
+        "issuer": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": ".*\\S.*"
+        },
+        "instrument_date": {
+          "oneOf": [
+            { "$ref": "#/$defs/instrumentDate" },
+            { "type": "null" }
+          ]
+        },
+        "publication_date": {
+          "oneOf": [
+            { "$ref": "#/$defs/publicationDate" },
+            { "type": "null" }
+          ]
+        },
+        "gaceta_number": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "gacetaIssue": {
+      "type": "object",
+      "description": "A source-native Gaceta issue identity scoped by country and official source. Number and date are metadata, not the identity.",
+      "required": [
+        "country_code",
+        "source_code",
+        "source_issue_id",
+        "gaceta_number",
+        "publication_date"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "country_code": { "$ref": "#/$defs/countryCode" },
+        "source_code": { "$ref": "#/$defs/sourceCode" },
+        "source_issue_id": { "$ref": "#/$defs/sourceNativeId" },
+        "gaceta_number": {
+          "type": "string",
+          "minLength": 1
+        },
+        "publication_date": { "$ref": "#/$defs/publicationDate" }
+      }
+    },
+    "officialCatalogueRecord": {
+      "type": "object",
+      "description": "Official catalogue-record identity. source_record_id is scoped by country_code and source_code and never substitutes for law_uuid.",
+      "required": [
+        "country_code",
+        "source_code",
+        "source_record_id",
+        "official_url"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "country_code": { "$ref": "#/$defs/countryCode" },
+        "source_code": { "$ref": "#/$defs/sourceCode" },
+        "source_record_id": { "$ref": "#/$defs/sourceNativeId" },
+        "official_url": { "$ref": "#/$defs/httpsUrl" }
+      }
+    },
+    "publishedArtifact": {
+      "type": "object",
+      "description": "One independently identified official artifact. Arrays of artifacts intentionally permit later replacements, corrections, and alternate formats without changing law_uuid.",
+      "required": [
+        "artifact_id",
+        "official_url",
+        "media_type",
+        "pdf_sha256",
+        "physical_page_count",
+        "document_physical_pages"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": { "$ref": "#/$defs/uuid" },
+        "official_url": { "$ref": "#/$defs/httpsUrl" },
+        "media_type": {
+          "type": "string",
+          "pattern": "^[a-z0-9.+-]+/[a-z0-9.+-]+$"
+        },
+        "pdf_sha256": {
+          "oneOf": [
+            { "$ref": "#/$defs/sha256" },
+            { "type": "null" }
+          ]
+        },
+        "physical_page_count": {
+          "oneOf": [
+            { "type": "integer", "minimum": 1 },
+            { "type": "null" }
+          ]
+        },
+        "document_physical_pages": {
+          "description": "Mapping-specific physical-page span occupied by this legal instrument in the artifact.",
+          "oneOf": [
+            { "$ref": "#/$defs/physicalPageRange" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "media_type": { "const": "application/pdf" } },
+            "required": ["media_type"]
+          },
+          "then": {
+            "properties": {
+              "pdf_sha256": { "$ref": "#/$defs/sha256" },
+              "physical_page_count": { "type": "integer", "minimum": 1 },
+              "document_physical_pages": {
+                "$ref": "#/$defs/physicalPageRange"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "transcription": {
+      "type": "object",
+      "description": "An immutable transcription identity bound to one PDF hash. Processor name and version are provenance, not transcription identity.",
+      "required": [
+        "transcription_id",
+        "artifact_id",
+        "pdf_sha256",
+        "transcription_contract",
+        "ocr_processor",
+        "ocr_processor_version"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "transcription_id": { "$ref": "#/$defs/uuid" },
+        "artifact_id": { "$ref": "#/$defs/uuid" },
+        "pdf_sha256": { "$ref": "#/$defs/sha256" },
+        "transcription_contract": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": ".*\\S.*"
+        },
+        "ocr_processor": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": ".*\\S.*"
+        },
+        "ocr_processor_version": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": ".*\\S.*"
+        }
+      }
+    },
+    "legalDocumentSource": {
+      "type": "object",
+      "description": "Explicit provenance relationship between one legal instrument and one official catalogue record. Additional source relationships use additional mapping records; artifacts and transcriptions are unbounded arrays.",
+      "required": [
+        "contract",
+        "source_mapping_id",
+        "law_uuid",
+        "relationship_role",
+        "gaceta_issue",
+        "catalogue_record",
+        "artifacts",
+        "transcriptions"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "contract": { "const": "legal_document_source" },
+        "source_mapping_id": { "$ref": "#/$defs/uuid" },
+        "law_uuid": { "$ref": "#/$defs/uuid" },
+        "relationship_role": {
+          "enum": [
+            "official_publication",
+            "official_correction",
+            "official_alternate"
+          ]
+        },
+        "gaceta_issue": {
+          "oneOf": [
+            { "$ref": "#/$defs/gacetaIssue" },
+            { "type": "null" }
+          ]
+        },
+        "catalogue_record": { "$ref": "#/$defs/officialCatalogueRecord" },
+        "artifacts": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/publishedArtifact" }
+        },
+        "transcriptions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/transcription" }
+        }
+      }
+    },
+    "unitLineage": {
+      "type": "object",
+      "description": "Exact source, artifact, PDF, and transcription used by a retrievable unit. OCR processor/version remain separate from immutable identities.",
+      "required": [
+        "source_mapping_id",
+        "artifact_id",
+        "pdf_sha256",
+        "transcription_id",
+        "ocr_processor",
+        "ocr_processor_version"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "source_mapping_id": { "$ref": "#/$defs/uuid" },
+        "artifact_id": { "$ref": "#/$defs/uuid" },
+        "pdf_sha256": { "$ref": "#/$defs/sha256" },
+        "transcription_id": { "$ref": "#/$defs/uuid" },
+        "ocr_processor": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ocr_processor_version": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "physicalPageRange": {
+      "type": "object",
+      "required": ["start", "end"],
+      "additionalProperties": false,
+      "properties": {
+        "start": { "type": "integer", "minimum": 1 },
+        "end": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "legalUnit": {
+      "type": "object",
+      "description": "One protected retrievable transcription unit. Identity is deterministic from law_uuid, transcription_id, and unit_key; the validator enforces the formula and source lineage.",
+      "required": [
+        "contract",
+        "law_uuid",
+        "unit_id",
+        "unit_key",
+        "unit_type",
+        "lineage",
+        "physical_pages",
+        "risk_assessment_status",
+        "risk_flags",
+        "transcription_text"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "contract": { "const": "legal_unit" },
+        "law_uuid": { "$ref": "#/$defs/uuid" },
+        "unit_id": {
+          "type": "string",
+          "description": "Deterministic value: lsr:v1:{law_uuid}:{transcription_id}:{unit_key}.",
+          "pattern": "^lsr:v1:[0-9a-f-]+:[0-9a-f-]+:[a-z][a-z0-9_]*:[a-z0-9][a-z0-9._-]*$"
+        },
+        "unit_key": {
+          "type": "string",
+          "description": "Deterministic source-bound key. page:N is the mandatory safe fallback.",
+          "pattern": "^(article|section|considering|operative|chapter|annex|table|page|other):[a-z0-9][a-z0-9._-]*$"
+        },
+        "unit_type": {
+          "enum": [
+            "article",
+            "section",
+            "considering",
+            "operative",
+            "chapter",
+            "annex",
+            "table",
+            "page",
+            "other"
+          ]
+        },
+        "lineage": { "$ref": "#/$defs/unitLineage" },
+        "physical_pages": { "$ref": "#/$defs/physicalPageRange" },
+        "risk_assessment_status": {
+          "enum": ["unchecked", "assessed"]
+        },
+        "risk_assessment_version": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": ".*\\S.*"
+        },
+        "risk_flags": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "table",
+              "handwriting",
+              "multi_column",
+              "checkbox",
+              "form",
+              "numeric_dense",
+              "low_coverage",
+              "unknown_structure"
+            ]
+          }
+        },
+        "transcription_text": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Protected transcription content. Committed fixtures must mark this text synthetic."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "risk_assessment_status": { "const": "assessed" }
+            },
+            "required": ["risk_assessment_status"]
+          },
+          "then": { "required": ["risk_assessment_version"] }
+        },
+        {
+          "if": {
+            "properties": {
+              "risk_assessment_status": { "const": "unchecked" }
+            },
+            "required": ["risk_assessment_status"]
+          },
+          "then": {
+            "not": { "required": ["risk_assessment_version"] }
+          }
+        }
+      ]
+    }
+  }
+}

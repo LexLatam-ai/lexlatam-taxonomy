@@ -10,6 +10,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import Ajv2020 from "ajv/dist/2020.js";
+import { validateLegalSourceReaderV1 } from "./validate-legal-source-reader.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const data = JSON.parse(
@@ -73,10 +74,12 @@ for (const fb of data.fallbacks ?? []) {
   checkRef(`fallback "${fb.prefix}"`, fb.type, fb.subtype);
 }
 
+errors.push(...validateLegalSourceReaderV1(ROOT, data));
+
 if (errors.length > 0) {
-  console.error("✗ data/document-types.json is invalid:");
+  console.error("✗ repository contracts are invalid:");
   for (const e of errors) console.error(`  - ${e}`);
   process.exit(1);
 }
 
-console.log("✓ data/document-types.json is valid.");
+console.log("✓ document taxonomy and legal-source-reader/v1 core are valid.");

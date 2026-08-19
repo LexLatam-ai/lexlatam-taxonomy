@@ -1,0 +1,211 @@
+{
+  "contract_id": "legal-source-reader/v1/core-bundle",
+  "schema_version": "1.0.0",
+  "legal_documents": [
+    {
+      "contract": "legal_document",
+      "law_uuid": "11111111-1111-4111-8111-111111111111",
+      "country_code": "pa",
+      "canonical_source_mapping_id": "22222222-2222-4222-8222-222222222222",
+      "document_type": "decree",
+      "document_subtype": "executive_decree",
+      "document_number": "17",
+      "title": "DECRETO EJECUTIVO DE PRUEBA No. 17",
+      "issuer": "AUTORIDAD DE PRUEBA",
+      "instrument_date": {
+        "value": "2026-08-10",
+        "basis": "official_instrument"
+      },
+      "publication_date": {
+        "value": "2026-08-12",
+        "basis": "official_gaceta"
+      },
+      "gaceta_number": "99999 A"
+    },
+    {
+      "contract": "legal_document",
+      "law_uuid": "55555555-5555-4555-8555-555555555555",
+      "country_code": "pa",
+      "canonical_source_mapping_id": "66666666-6666-4666-8666-666666666666",
+      "document_type": "law",
+      "document_subtype": null,
+      "document_number": "1",
+      "title": "LEY SINTÉTICA No. 1",
+      "issuer": "ASAMBLEA DE PRUEBA",
+      "instrument_date": {
+        "value": "2026-08-11",
+        "basis": "reviewed_catalogue"
+      },
+      "publication_date": {
+        "value": "2026-08-13",
+        "basis": "reviewed_catalogue"
+      },
+      "gaceta_number": "99999 B"
+    }
+  ],
+  "source_mappings": [
+    {
+      "contract": "legal_document_source",
+      "source_mapping_id": "22222222-2222-4222-8222-222222222222",
+      "law_uuid": "11111111-1111-4111-8111-111111111111",
+      "relationship_role": "official_publication",
+      "gaceta_issue": {
+        "country_code": "pa",
+        "source_code": "panama_gaceta",
+        "source_issue_id": "TEST-ISSUE-A",
+        "gaceta_number": "99999 A",
+        "publication_date": {
+          "value": "2026-08-12",
+          "basis": "official_gaceta"
+        }
+      },
+      "catalogue_record": {
+        "country_code": "pa",
+        "source_code": "panama_gaceta",
+        "source_record_id": "TEST-RECORD-1",
+        "official_url": "https://example.invalid/gaceta/test-record-1"
+      },
+      "artifacts": [
+        {
+          "artifact_id": "33333333-3333-4333-8333-333333333333",
+          "official_url": "https://example.invalid/gaceta/test-record-1.pdf",
+          "media_type": "application/pdf",
+          "pdf_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "physical_page_count": 2,
+          "document_physical_pages": { "start": 1, "end": 2 }
+        }
+      ],
+      "transcriptions": [
+        {
+          "transcription_id": "44444444-4444-4444-8444-444444444444",
+          "artifact_id": "33333333-3333-4333-8333-333333333333",
+          "pdf_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "transcription_contract": "ocr-text/v1",
+          "ocr_processor": "synthetic-fixture",
+          "ocr_processor_version": "1.0"
+        }
+      ]
+    },
+    {
+      "contract": "legal_document_source",
+      "source_mapping_id": "66666666-6666-4666-8666-666666666666",
+      "law_uuid": "55555555-5555-4555-8555-555555555555",
+      "relationship_role": "official_publication",
+      "gaceta_issue": {
+        "country_code": "pa",
+        "source_code": "panama_gaceta",
+        "source_issue_id": "TEST-ISSUE-B",
+        "gaceta_number": "99999 B",
+        "publication_date": {
+          "value": "2026-08-13",
+          "basis": "reviewed_catalogue"
+        }
+      },
+      "catalogue_record": {
+        "country_code": "pa",
+        "source_code": "panama_gaceta",
+        "source_record_id": "TEST-RECORD-2",
+        "official_url": "https://example.invalid/gaceta/test-record-2"
+      },
+      "artifacts": [
+        {
+          "artifact_id": "77777777-7777-4777-8777-777777777777",
+          "official_url": "https://example.invalid/gaceta/test-record-2.pdf",
+          "media_type": "application/pdf",
+          "pdf_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "physical_page_count": 1,
+          "document_physical_pages": { "start": 1, "end": 1 }
+        }
+      ],
+      "transcriptions": [
+        {
+          "transcription_id": "88888888-8888-4888-8888-888888888888",
+          "artifact_id": "77777777-7777-4777-8777-777777777777",
+          "pdf_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "transcription_contract": "ocr-text/v1",
+          "ocr_processor": "synthetic-fixture",
+          "ocr_processor_version": "1.0"
+        }
+      ]
+    }
+  ],
+  "legal_units": [
+    {
+      "contract": "legal_unit",
+      "law_uuid": "11111111-1111-4111-8111-111111111111",
+      "unit_id": "lsr:v1:11111111-1111-4111-8111-111111111111:44444444-4444-4444-8444-444444444444:page:1",
+      "unit_key": "page:1",
+      "unit_type": "page",
+      "lineage": {
+        "source_mapping_id": "22222222-2222-4222-8222-222222222222",
+        "artifact_id": "33333333-3333-4333-8333-333333333333",
+        "pdf_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "transcription_id": "44444444-4444-4444-8444-444444444444",
+        "ocr_processor": "synthetic-fixture",
+        "ocr_processor_version": "1.0"
+      },
+      "physical_pages": { "start": 1, "end": 1 },
+      "risk_assessment_status": "unchecked",
+      "risk_flags": [],
+      "transcription_text": "[SYNTHETIC] First physical page of the fixture document."
+    },
+    {
+      "contract": "legal_unit",
+      "law_uuid": "11111111-1111-4111-8111-111111111111",
+      "unit_id": "lsr:v1:11111111-1111-4111-8111-111111111111:44444444-4444-4444-8444-444444444444:page:2",
+      "unit_key": "page:2",
+      "unit_type": "page",
+      "lineage": {
+        "source_mapping_id": "22222222-2222-4222-8222-222222222222",
+        "artifact_id": "33333333-3333-4333-8333-333333333333",
+        "pdf_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "transcription_id": "44444444-4444-4444-8444-444444444444",
+        "ocr_processor": "synthetic-fixture",
+        "ocr_processor_version": "1.0"
+      },
+      "physical_pages": { "start": 2, "end": 2 },
+      "risk_assessment_status": "unchecked",
+      "risk_flags": ["unknown_structure"],
+      "transcription_text": "[SYNTHETIC] Second physical page of the fixture document."
+    },
+    {
+      "contract": "legal_unit",
+      "law_uuid": "11111111-1111-4111-8111-111111111111",
+      "unit_id": "lsr:v1:11111111-1111-4111-8111-111111111111:44444444-4444-4444-8444-444444444444:article:1",
+      "unit_key": "article:1",
+      "unit_type": "article",
+      "lineage": {
+        "source_mapping_id": "22222222-2222-4222-8222-222222222222",
+        "artifact_id": "33333333-3333-4333-8333-333333333333",
+        "pdf_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "transcription_id": "44444444-4444-4444-8444-444444444444",
+        "ocr_processor": "synthetic-fixture",
+        "ocr_processor_version": "1.0"
+      },
+      "physical_pages": { "start": 1, "end": 2 },
+      "risk_assessment_status": "assessed",
+      "risk_assessment_version": "risk-rules/v1",
+      "risk_flags": [],
+      "transcription_text": "[SYNTHETIC] Article-level fixture content with deterministic source evidence."
+    },
+    {
+      "contract": "legal_unit",
+      "law_uuid": "55555555-5555-4555-8555-555555555555",
+      "unit_id": "lsr:v1:55555555-5555-4555-8555-555555555555:88888888-8888-4888-8888-888888888888:page:1",
+      "unit_key": "page:1",
+      "unit_type": "page",
+      "lineage": {
+        "source_mapping_id": "66666666-6666-4666-8666-666666666666",
+        "artifact_id": "77777777-7777-4777-8777-777777777777",
+        "pdf_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "transcription_id": "88888888-8888-4888-8888-888888888888",
+        "ocr_processor": "synthetic-fixture",
+        "ocr_processor_version": "1.0"
+      },
+      "physical_pages": { "start": 1, "end": 1 },
+      "risk_assessment_status": "unchecked",
+      "risk_flags": [],
+      "transcription_text": "[SYNTHETIC] Page unit for the second fixture document."
+    }
+  ]
+}

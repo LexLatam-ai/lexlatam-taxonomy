@@ -1,0 +1,50 @@
+{
+  "base_fixture": "valid-core-bundle.json",
+  "cases": [
+    {
+      "name": "wrong-source-unit",
+      "operation": "replace",
+      "path": [
+        "legal_units",
+        0,
+        "lineage",
+        "source_mapping_id"
+      ],
+      "value": "66666666-6666-4666-8666-666666666666",
+      "expected_error": "belongs to law_uuid"
+    },
+    {
+      "name": "invalid-page-range",
+      "operation": "replace",
+      "path": ["legal_units", 0, "physical_pages", "start"],
+      "value": 2,
+      "expected_error": "ends before it starts"
+    },
+    {
+      "name": "missing-lineage",
+      "operation": "remove",
+      "path": ["legal_units", 0, "lineage", "pdf_sha256"],
+      "expected_error": "pdf_sha256"
+    },
+    {
+      "name": "invalid-risk-state",
+      "operation": "replace",
+      "path": ["legal_units", 0, "risk_assessment_status"],
+      "value": "assessed",
+      "expected_error": "risk_assessment_version"
+    },
+    {
+      "name": "missing-page-fallback",
+      "operation": "remove",
+      "path": ["legal_units", 1],
+      "expected_error": "missing required page:2 fallback"
+    },
+    {
+      "name": "non-deterministic-unit-identity",
+      "operation": "replace",
+      "path": ["legal_units", 0, "unit_id"],
+      "value": "lsr:v1:11111111-1111-4111-8111-111111111111:44444444-4444-4444-8444-444444444444:page:2",
+      "expected_error": "unit_id must be"
+    }
+  ]
+}
