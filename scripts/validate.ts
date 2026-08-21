@@ -1,6 +1,6 @@
 /**
- * Validates the canonical document-type and legal-subject data against their
- * JSON Schemas and runs cross-reference checks the schemas cannot express.
+ * Validates the canonical document-type, legal-subject, and legal-source-reader
+ * contracts and runs cross-reference checks the schemas cannot express.
  *
  * Exits non-zero on any failure so CI can gate on it.
  */
@@ -8,6 +8,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import Ajv2020 from "ajv/dist/2020.js";
+import { validateLegalSourceReaderV1 } from "./validate-legal-source-reader.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const data = JSON.parse(
@@ -133,10 +134,14 @@ for (const fb of data.fallbacks ?? []) {
   checkRef(`fallback "${fb.prefix}"`, fb.type, fb.subtype);
 }
 
+errors.push(...validateLegalSourceReaderV1(ROOT, data));
+
 if (errors.length > 0) {
-  console.error("✗ taxonomy data is invalid:");
+  console.error("✗ repository contracts are invalid:");
   for (const e of errors) console.error(`  - ${e}`);
   process.exit(1);
 }
 
-console.log("✓ taxonomy data is valid.");
+console.log(
+  "✓ document types, legal subjects, and legal-source-reader/v1 core are valid.",
+);
