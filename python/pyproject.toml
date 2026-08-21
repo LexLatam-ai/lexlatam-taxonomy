@@ -1,7 +1,7 @@
 [project]
 name = "lexlatam-taxonomy"
-version = "1.1.0"
-description = "Language-neutral taxonomy for Gaceta Oficial de Panamá legal documents."
+version = "1.2.0"
+description = "Shared taxonomy contracts for LexLatam legal documents and subjects."
 requires-python = ">=3.10,<4.0.0"
 license = { text = "Proprietary - See LICENSE file. All rights reserved." }
 authors = [{ name = "Invariant Engineering LLC", email = "contact@invariantengineering.com" }]
@@ -19,6 +19,7 @@ Repository = "https://github.com/LexLatam-ai/lexlatam-taxonomy"
 packages = [{ include = "lexlatam_taxonomy" }]
 include = [
     { path = "lexlatam_taxonomy/data.json", format = ["sdist", "wheel"] },
+    { path = "lexlatam_taxonomy/legal-subjects.json", format = ["sdist", "wheel"] },
 ]
 
 [tool.poetry.group.dev.dependencies]

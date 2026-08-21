@@ -1,0 +1,42 @@
+{
+  "version": "1.2.0",
+  "subjects": {
+    "administrative": { "label_es": "Administrativo", "includes": "Actuación, organización y control de la administración pública.", "excludes": "Contrataciones públicas y control constitucional." },
+    "banking_finance": { "label_es": "Bancario y financiero", "includes": "Banca, valores, seguros y regulación financiera.", "excludes": "Tributos y relaciones comerciales generales." },
+    "civil": { "label_es": "Civil", "includes": "Obligaciones, contratos civiles, responsabilidad y derechos privados generales.", "excludes": "Comercio, familia y propiedad inmobiliaria cuando exista una materia más específica." },
+    "civil_procedure": { "label_es": "Procesal civil", "includes": "Procesos, recursos y ejecución en la jurisdicción civil.", "excludes": "Derecho civil sustantivo y proceso penal." },
+    "commercial": { "label_es": "Comercial", "includes": "Actos de comercio, contratos mercantiles y actividad empresarial.", "excludes": "Gobierno societario y servicios bancarios especializados." },
+    "constitutional": { "label_es": "Constitucional", "includes": "Constitución, derechos fundamentales y control de constitucionalidad.", "excludes": "Actuación administrativa ordinaria." },
+    "consumer": { "label_es": "Consumo", "includes": "Protección del consumidor, garantías y relaciones de consumo.", "excludes": "Contratos civiles o comerciales sin una relación de consumo." },
+    "corporate": { "label_es": "Societario", "includes": "Constitución, gobierno, reorganización y disolución de sociedades.", "excludes": "Contratos mercantiles generales y regulación bancaria." },
+    "criminal": { "label_es": "Penal", "includes": "Delitos, penas y responsabilidad penal sustantiva.", "excludes": "Investigación, juicio y recursos del proceso penal." },
+    "criminal_procedure": { "label_es": "Procesal penal", "includes": "Investigación, juicio, medidas y recursos penales.", "excludes": "Definición sustantiva de delitos y penas." },
+    "employment": { "label_es": "Laboral", "includes": "Relaciones de trabajo, contratos laborales y derechos de trabajadores.", "excludes": "Prestaciones y cotizaciones de seguridad social." },
+    "environmental": { "label_es": "Ambiental", "includes": "Protección ambiental, recursos naturales y evaluación de impacto.", "excludes": "Uso de inmuebles sin una cuestión ambiental predominante." },
+    "family": { "label_es": "Familia", "includes": "Matrimonio, filiación, alimentos, custodia y relaciones familiares.", "excludes": "Sucesiones y obligaciones civiles generales." },
+    "immigration": { "label_es": "Migratorio", "includes": "Ingreso, permanencia, visas, residencia y nacionalidad.", "excludes": "Relaciones laborales de personas extranjeras sin cuestión migratoria." },
+    "maritime": { "label_es": "Marítimo", "includes": "Navegación, buques, puertos y comercio marítimo.", "excludes": "Comercio general y regulación ambiental no marítima." },
+    "property_real_estate": { "label_es": "Propiedad inmobiliaria", "includes": "Dominio, posesión, arrendamiento, registro y uso de inmuebles.", "excludes": "Obligaciones civiles sin una cuestión inmobiliaria predominante." },
+    "public_procurement": { "label_es": "Contrataciones públicas", "includes": "Licitaciones, contratos públicos y compras estatales.", "excludes": "Actuación administrativa sin contratación pública." },
+    "social_security": { "label_es": "Seguridad social", "includes": "Pensiones, prestaciones, afiliación y cotizaciones sociales.", "excludes": "Relaciones laborales sin una cuestión de seguridad social." },
+    "tax": { "label_es": "Tributario", "includes": "Impuestos, tasas, contribuciones y procedimientos tributarios.", "excludes": "Regulación financiera y cobros civiles ordinarios." },
+    "other": { "label_es": "Otros", "includes": "Materia identificada con confianza pero fuera de las categorías enumeradas.", "excludes": "Casos sin información suficiente o cuya clasificación falló." },
+    "unknown": { "label_es": "Sin clasificar", "includes": "Materia ausente, insuficiente, excluida o no clasificada con éxito.", "excludes": "Materia conocida que está fuera de las categorías enumeradas." }
+  },
+  "content_category_crosswalk": {
+    "administrative": "administrative",
+    "civil": "civil",
+    "commercial": "commercial",
+    "constitutional": "constitutional",
+    "consumer": "consumer",
+    "criminal": "criminal",
+    "employment": "employment",
+    "family": "family",
+    "immigration": "immigration",
+    "other": "other",
+    "procedural": "unknown",
+    "property": "property_real_estate",
+    "social_security": "social_security",
+    "tax": "tax"
+  }
+}

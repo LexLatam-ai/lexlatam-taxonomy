@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lexlatam.ai/schemas/legal-subjects.schema.json",
+  "title": "LexLatam legal-subject taxonomy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "subjects", "content_category_crosswalk"],
+  "properties": {
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "subjects": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^[a-z][a-z0-9_]*$" },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["label_es", "includes", "excludes"],
+        "properties": {
+          "label_es": { "type": "string", "minLength": 1, "pattern": "\\S" },
+          "label_en": { "type": "string", "minLength": 1, "pattern": "\\S" },
+          "includes": { "type": "string", "minLength": 1, "pattern": "\\S" },
+          "excludes": { "type": "string", "minLength": 1, "pattern": "\\S" }
+        }
+      }
+    },
+    "content_category_crosswalk": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^[a-z][a-z0-9_]*$" },
+      "additionalProperties": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
+    }
+  }
+}
