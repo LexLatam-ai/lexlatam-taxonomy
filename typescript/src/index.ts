@@ -7,22 +7,29 @@
  * type unions and label tables live in the generated `types.ts`.
  */
 import data from "./data.json";
+import legalSubjects from "./legal-subjects.json";
 import {
+  CONTENT_CATEGORY_TO_LEGAL_SUBJECT,
+  LEGAL_SUBJECT_LABELS,
   SUBTYPE_LABELS,
   SUBTYPE_PARENTS,
   TYPE_LABELS,
   type DocumentSubtype,
   type DocumentType,
   type Labels,
+  type LegalSubject,
 } from "./types.js";
 
 export {
   SUBTYPE_LABELS,
   SUBTYPE_PARENTS,
   TYPE_LABELS,
+  CONTENT_CATEGORY_TO_LEGAL_SUBJECT,
+  LEGAL_SUBJECT_LABELS,
   type DocumentSubtype,
   type DocumentType,
   type Labels,
+  type LegalSubject,
 };
 
 interface TaxonomyData {
@@ -32,9 +39,39 @@ interface TaxonomyData {
 }
 
 const TAXONOMY = data as unknown as TaxonomyData;
+interface LegalSubjectData {
+  version: string;
+  subjects: Record<LegalSubject, { label_es: string; label_en?: string }>;
+}
+
+const LEGAL_SUBJECT_TAXONOMY = legalSubjects as unknown as LegalSubjectData;
 
 /** Semantic version of the taxonomy data this package was generated from. */
 export const VERSION: string = TAXONOMY.version;
+
+if (LEGAL_SUBJECT_TAXONOMY.version !== VERSION) {
+  throw new Error("Bundled taxonomy versions do not match");
+}
+
+/** Return the approved localized label for a legal subject. */
+export function legalSubjectLabel(
+  subject: LegalSubject,
+  locale: "es" | "en" = "es",
+): string {
+  if (locale !== "es" && locale !== "en") {
+    throw new Error(`Unsupported locale: ${locale}`);
+  }
+  if (!Object.prototype.hasOwnProperty.call(LEGAL_SUBJECT_LABELS, subject)) {
+    throw new Error(`Unknown legal-subject identifier: ${subject}`);
+  }
+
+  if (locale === "es") return LEGAL_SUBJECT_LABELS[subject];
+  const english = LEGAL_SUBJECT_TAXONOMY.subjects[subject].label_en;
+  if (english === undefined) {
+    throw new Error(`No "en" label is defined for legal subject "${subject}"`);
+  }
+  return english;
+}
 
 /** Result of {@link normalize}: a canonical type and optional subtype. */
 export interface NormalizeResult {

@@ -1,26 +1,49 @@
 name: Publish
 
 # Triggered by a release tag `vX.Y.Z`. The tag MUST match the "version" field
-# in data/document-types.json and the version of both packages.
+# in both canonical data files and the version of both packages.
 on:
   push:
     tags: ["v*"]
 
 jobs:
-  verify-version:
+  verify-release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install tooling dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate canonical taxonomy data
+        run: pnpm run validate
+
+      - name: Regenerate bindings and reject drift
+        run: |
+          pnpm run generate
+          if [ -n "$(git status --porcelain --untracked-files=all)" ]; then
+            git status --short --untracked-files=all
+            exit 1
+          fi
 
       - name: Verify tag matches taxonomy + package versions
         run: |
           TAG="${GITHUB_REF_NAME#v}"
           DATA_VERSION=$(node -p "require('./data/document-types.json').version")
+          SUBJECT_VERSION=$(node -p "require('./data/legal-subjects.json').version")
           NPM_VERSION=$(node -p "require('./typescript/package.json').version")
           PY_VERSION=$(grep -m1 '^version' python/pyproject.toml | sed -E 's/.*"(.*)".*/\1/')
-          echo "tag=$TAG data=$DATA_VERSION npm=$NPM_VERSION python=$PY_VERSION"
+          echo "tag=$TAG documents=$DATA_VERSION subjects=$SUBJECT_VERSION npm=$NPM_VERSION python=$PY_VERSION"
           fail=0
-          for pair in "data:$DATA_VERSION" "npm:$NPM_VERSION" "python:$PY_VERSION"; do
+          for pair in "documents:$DATA_VERSION" "subjects:$SUBJECT_VERSION" "npm:$NPM_VERSION" "python:$PY_VERSION"; do
             if [ "${pair#*:}" != "$TAG" ]; then
               echo "::error::Version mismatch — tag is v$TAG but ${pair%%:*} is ${pair#*:}"
               fail=1
@@ -28,8 +51,39 @@ jobs:
           done
           exit $fail
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Poetry
+        run: pipx install "poetry>=2.0,<3.0"
+
+      - name: Test and build Python package
+        working-directory: python
+        run: |
+          poetry install --no-interaction
+          poetry run pytest
+          poetry build
+          python -m venv "$RUNNER_TEMP/python-smoke"
+          "$RUNNER_TEMP/python-smoke/bin/pip" install dist/*.whl
+          "$RUNNER_TEMP/python-smoke/bin/python" -c "from lexlatam_taxonomy import LegalSubject, legal_subject_label; assert legal_subject_label(LegalSubject.EMPLOYMENT) == 'Laboral'"
+
+      - name: Test, build, and pack TypeScript package
+        working-directory: typescript
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run typecheck
+          pnpm test
+          pnpm run build
+          PACKAGE=$(pnpm pack --pack-destination "$RUNNER_TEMP")
+          mkdir -p "$RUNNER_TEMP/npm-smoke"
+          npm install --prefix "$RUNNER_TEMP/npm-smoke" "$PACKAGE"
+          cd "$RUNNER_TEMP/npm-smoke"
+          node --input-type=module -e "import('@lexlatam-ai/taxonomy').then(({ legalSubjectLabel }) => { if (legalSubjectLabel('employment') !== 'Laboral') process.exit(1) })"
+
   publish-npm:
-    needs: verify-version
+    needs: verify-release
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -60,7 +114,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish-python:
-    needs: verify-version
+    needs: verify-release
     runs-on: ubuntu-latest
     permissions:
       contents: write

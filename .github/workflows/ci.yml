@@ -22,7 +22,7 @@ jobs:
       - name: Install tooling dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Validate data/document-types.json against schema
+      - name: Validate canonical taxonomy data
         run: pnpm run validate
 
       - name: Regenerate bindings
@@ -30,9 +30,10 @@ jobs:
 
       - name: Fail if committed generated files are stale
         run: |
-          if ! git diff --exit-code; then
+          if [ -n "$(git status --porcelain --untracked-files=all)" ]; then
             echo "::error::Generated bindings are out of date."
             echo "Run 'pnpm run generate' and commit the result."
+            git status --short --untracked-files=all
             exit 1
           fi
 
@@ -53,6 +54,14 @@ jobs:
         working-directory: python
         run: poetry run pytest
 
+      - name: Build and install Python release artifact
+        working-directory: python
+        run: |
+          poetry build
+          python -m venv "$RUNNER_TEMP/python-smoke"
+          "$RUNNER_TEMP/python-smoke/bin/pip" install dist/*.whl
+          "$RUNNER_TEMP/python-smoke/bin/python" -c "from lexlatam_taxonomy import LegalSubject, legal_subject_label; assert legal_subject_label(LegalSubject.EMPLOYMENT) == 'Laboral'"
+
       # --- TypeScript package ----------------------------------------------
       - name: Install TypeScript package
         working-directory: typescript
@@ -69,3 +78,12 @@ jobs:
       - name: Run TypeScript tests
         working-directory: typescript
         run: pnpm test
+
+      - name: Pack and install TypeScript release artifact
+        working-directory: typescript
+        run: |
+          PACKAGE=$(pnpm pack --pack-destination "$RUNNER_TEMP")
+          mkdir -p "$RUNNER_TEMP/npm-smoke"
+          npm install --prefix "$RUNNER_TEMP/npm-smoke" "$PACKAGE"
+          cd "$RUNNER_TEMP/npm-smoke"
+          node --input-type=module -e "import('@lexlatam-ai/taxonomy').then(({ legalSubjectLabel }) => { if (legalSubjectLabel('employment') !== 'Laboral') process.exit(1) })"
