@@ -82,8 +82,8 @@ jobs:
       - name: Pack and install TypeScript release artifact
         working-directory: typescript
         run: |
-          PACKAGE=$(pnpm pack --pack-destination "$RUNNER_TEMP")
+          PACKAGE=$(npm pack --pack-destination "$RUNNER_TEMP" --silent)
           mkdir -p "$RUNNER_TEMP/npm-smoke"
-          npm install --prefix "$RUNNER_TEMP/npm-smoke" "$PACKAGE"
+          npm install --prefix "$RUNNER_TEMP/npm-smoke" "$RUNNER_TEMP/$PACKAGE"
           cd "$RUNNER_TEMP/npm-smoke"
           node --input-type=module -e "import('@lexlatam-ai/taxonomy').then(({ legalSubjectLabel }) => { if (legalSubjectLabel('employment') !== 'Laboral') process.exit(1) })"
