@@ -1,7 +1,7 @@
 # lexlatam-taxonomy
 
-The single, language-neutral **source of truth** for the LexLatam legal-document
-taxonomy. The native→normalized mapping is derived from the Gaceta Oficial de
+The language-neutral **source of truth** for LexLatam legal-document types and
+legal subjects. The native→normalized document mapping is derived from the Gaceta Oficial de
 Panamá `tipo_documento` field. A few canonical types — currently `code` and
 `constitution` — cover non-Gaceta consolidated texts; they are **type-only
 entries** with labels but no native `mappings`/`fallbacks`, so `normalize()`
@@ -16,10 +16,10 @@ This repository is consumed by both npm and python packages.
 
 ## Core principle
 
-**The source of truth is data, not code.** One JSON file — [`data/document-types.json`](data/document-types.json)
-— defines the entire taxonomy. The typed Python and TypeScript bindings are
-**generated** from it and committed to the repository. No human ever hand-writes
-the type lists in either language.
+**The source of truth is data, not code.** Separate canonical JSON files define
+document types and legal subjects. The typed Python and TypeScript bindings are
+**generated** from them and committed to the repository. Document types answer
+what an instrument is; legal subjects answer which field of law it concerns.
 
 CI regenerates the bindings on every pull request and fails if the committed
 output is stale, so `data/` and the bindings can never drift.
@@ -31,9 +31,11 @@ lexlatam-taxonomy/
   data/
     document-types.json   # THE source of truth
     schema.json           # JSON Schema (draft 2020-12) it must satisfy
+    legal-subjects.json   # canonical legal-subject contract
+    legal-subjects.schema.json
   scripts/
     generate.ts           # reads data/, emits the python/ and typescript/ bindings
-    validate.ts           # validates document-types.json against schema.json
+    validate.ts           # validates both canonical data domains
   python/                 # Python package — lexlatam-taxonomy
   typescript/             # npm package — @lexlatam-ai/taxonomy
   .github/workflows/      # ci.yml, publish.yml
@@ -41,7 +43,8 @@ lexlatam-taxonomy/
 
 Generated files (committed, never hand-edited):
 `python/lexlatam_taxonomy/types.py`, `python/lexlatam_taxonomy/data.json`,
-`typescript/src/types.ts`, `typescript/src/data.json`.
+`python/lexlatam_taxonomy/legal-subjects.json`, `typescript/src/types.ts`,
+`typescript/src/data.json`, and `typescript/src/legal-subjects.json`.
 
 ## The data model
 
@@ -90,6 +93,14 @@ subtypes_of(DocumentType.DECREE)      # [DocumentSubtype.EXECUTIVE_DECREE, ...]
 
 `normalize(raw) -> tuple[DocumentType, DocumentSubtype | None]`
 
+Legal subjects use a separate additive API:
+
+```python
+from lexlatam_taxonomy import LegalSubject, legal_subject_label
+
+legal_subject_label(LegalSubject.EMPLOYMENT)  # "Laboral"
+```
+
 ### TypeScript (`@lexlatam-ai/taxonomy`)
 
 ```ts
@@ -111,18 +122,28 @@ subtypesOf("decree");  // ["executive_decree", ...]
 
 The npm package ships ESM + CJS with `.d.ts` declarations.
 
+```ts
+import { legalSubjectLabel, type LegalSubject } from "@lexlatam-ai/taxonomy";
+
+const subject: LegalSubject = "employment";
+legalSubjectLabel(subject); // "Laboral"
+```
+
+Spanish is normative and the default in both packages. See
+[`docs/legal-subjects.md`](docs/legal-subjects.md) for domain boundaries,
+`other`/`unknown` semantics, and the content-category crosswalk.
+
 ## Versioning policy
 
-The taxonomy follows **semantic versioning**. The contract is the set of canonical
-type/subtype identifiers and the native-string mappings. The single version number
-lives in `data/document-types.json`; the Python and npm package versions are derived
-from it and **must match** on every release.
+The taxonomy follows **semantic versioning**. One package version covers all
+exported contracts. It appears in both canonical data files and in the Python
+and npm packages; all four values **must match** on every release.
 
 | Bump  | Meaning                                                                       | Consumer impact            |
 | ----- | ----------------------------------------------------------------------------- | -------------------------- |
 | PATCH | Label-text fixes, docs, non-behavioral changes.                               | None.                      |
-| MINOR | **Additive only** — a new type, subtype, native-string mapping, or fallback.  | Safe on a caret range.     |
-| MAJOR | Renaming/removing a canonical identifier, or changing what a native string maps to. | **Breaking** — review required. |
+| MINOR | **Additive only** — a new document value, mapping, fallback, subject, or public export. | Safe on a caret range. |
+| MAJOR | Renaming/removing an identifier or changing an existing mapping's meaning. | **Breaking** — review required. |
 
 ## Distribution model
 
@@ -146,10 +167,10 @@ Python package is distributed straight from the git tag with no auth.
 
 ## Releasing
 
-1. Edit `data/document-types.json` and bump its `version`.
+1. Edit the applicable canonical data and bump the version in both data files.
 2. Run `pnpm run generate` and commit the regenerated bindings.
 3. Bump `version` in `python/pyproject.toml` and `typescript/package.json` so all
-   three match — `publish.yml`'s `verify-version` job fails the release otherwise.
+   four values match — `publish.yml`'s `verify-version` job fails otherwise.
 4. Tag the commit `vX.Y.Z` and push the tag:
 
    ```bash
@@ -157,7 +178,7 @@ Python package is distributed straight from the git tag with no auth.
    git push origin v1.0.0
    ```
 
-   `publish.yml` then verifies the tag matches all three versions, publishes the
+   `publish.yml` then verifies the tag matches all four version locations, publishes the
    npm package to GitHub Packages, builds the Python wheel + sdist, and attaches
    them to the GitHub Release.
 
@@ -204,14 +225,14 @@ because this repository is public **no credentials are needed** to install it.
 pip:
 
 ```bash
-pip install "lexlatam-taxonomy @ git+https://github.com/LexLatam-ai/lexlatam-taxonomy.git@v1.1.0#subdirectory=python"
+pip install "lexlatam-taxonomy @ git+https://github.com/LexLatam-ai/lexlatam-taxonomy.git@v1.2.0#subdirectory=python"
 ```
 
 Poetry (`pyproject.toml` of the consuming repo):
 
 ```toml
 [tool.poetry.dependencies]
-lexlatam-taxonomy = { git = "https://github.com/LexLatam-ai/lexlatam-taxonomy.git", tag = "v1.1.0", subdirectory = "python" }
+lexlatam-taxonomy = { git = "https://github.com/LexLatam-ai/lexlatam-taxonomy.git", tag = "v1.2.0", subdirectory = "python" }
 ```
 
 A wheel + sdist are also attached to each GitHub Release if you prefer to
@@ -221,7 +242,7 @@ install from a downloaded artifact.
 
 ```bash
 pnpm install               # root tooling (codegen + validation)
-pnpm run validate          # validate data/document-types.json against the schema
+pnpm run validate          # validate both canonical data domains
 pnpm run generate          # regenerate the committed bindings
 
 cd typescript && pnpm install && pnpm test     # TypeScript package
