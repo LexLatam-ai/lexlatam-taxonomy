@@ -40,7 +40,9 @@ The response schema defines four boundaries:
 
 The producer core remains in `schema.json`. The response contracts are in
 `responses.schema.json`; they reference the core legal-document definition and
-are validated against the same synthetic core fixture.
+are validated against the same synthetic core fixture. Publication, access,
+login return, Spanish browser locations, repository ownership, and rollout
+requirements are frozen in `policy.md`.
 
 ## Identity and provenance rules
 
@@ -131,6 +133,23 @@ Resolved citations retain the law identity, country route, source mapping,
 source-bound unit, 1-based physical pages, PDF hash, transcription ID, official
 source, same-application reader location, and unit risk state.
 
+## Spanish browser-location boundary
+
+Internal unit keys remain stable producer and API identifiers. They must not be
+displayed in user-facing routes, query parameters, labels, or links. Citation
+reader locations translate them into the Spanish public form defined in
+`policy.md`.
+
+The canonical reader location has this shape:
+
+```text
+/{country_route}/leyes/{law_uuid}/lector?unidad={public_unit_key}&pagina={physical_page}
+```
+
+For example, internal `article:1` becomes `articulo:1`, and internal `page:2`
+becomes `pagina:2`. The validator rejects the former
+`/reader?unit=...&page=...` form as non-canonical.
+
 ## Collector compatibility boundary
 
 Current collector operational fields must be adapted deliberately:
@@ -164,8 +183,8 @@ fallback shapes, and risk-state combinations. It also proves that the negative
 fixtures fail for anonymous protected responses, public text disclosure,
 wrong-law and wrong-source units, invalid page ranges, missing mappings,
 unchecked risk with an assessment version, invented official-source fallback
-fields, bulk reader responses, missing lineage, missing page fallback, and
-non-deterministic unit identity.
+fields, bulk reader responses, non-Spanish reader locations, missing lineage,
+missing page fallback, and non-deterministic unit identity.
 
 All committed transcription text is marked `[SYNTHETIC]`. The fixtures contain
 no protected OCR.
@@ -174,6 +193,7 @@ no protected OCR.
 
 These contracts authorize no migration, backfill, merge, inferred legacy
 relationship, endpoint implementation, authentication change, origin
-allowlist, publication-policy freeze, anonymous PDF preview, legal-subject
+allowlist implementation, anonymous PDF preview implementation, legal-subject
 classification, legal-relationship graph, or deployment. Those require their
-own implementation or review gates.
+own implementation or review gates. The approved policy defines constraints;
+it does not perform those operations.
