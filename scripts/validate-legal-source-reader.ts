@@ -25,6 +25,12 @@ interface LegalDocument {
   gaceta_number: string | null;
 }
 
+interface RiskState {
+  risk_assessment_status: "unchecked" | "assessed";
+  risk_assessment_version?: string;
+  risk_flags: string[];
+}
+
 interface PageRange {
   start: number;
   end: number;
@@ -60,6 +66,8 @@ interface SourceMapping {
   catalogue_record: {
     country_code: string;
     source_code: string;
+    source_record_id: string;
+    official_url: string;
   };
   artifacts: PublishedArtifact[];
   transcriptions: Transcription[];
@@ -79,6 +87,9 @@ interface LegalUnit {
     ocr_processor_version: string;
   };
   physical_pages: PageRange;
+  risk_assessment_status: "unchecked" | "assessed";
+  risk_assessment_version?: string;
+  risk_flags: string[];
   transcription_text: string;
 }
 
@@ -101,6 +112,108 @@ interface InvalidCasesFile {
   cases: InvalidCase[];
 }
 
+interface OfficialSourceResponse {
+  source_mapping_id: string;
+  country_code: string;
+  source_code: string;
+  source_record_id: string;
+  official_url: string;
+}
+
+interface ResponseUnitReference {
+  unit_id: string;
+  unit_key: string;
+  unit_type: string;
+  physical_pages: PageRange;
+}
+
+interface UnitManifestItem extends ResponseUnitReference {
+  risk: RiskState;
+}
+
+interface PublicOutlineResponse {
+  contract_id: "legal-source-reader/v1/public-outline";
+  access: "public";
+  law_uuid: string;
+  country_route: string;
+  outline: Array<ResponseUnitReference & { label: string }>;
+}
+
+interface ReaderMetadataResponse {
+  contract_id: "legal-source-reader/v1/reader-metadata";
+  access: "authenticated";
+  law_uuid: string;
+  country_route: string;
+  canonical_metadata: LegalDocument;
+  official_source: OfficialSourceResponse;
+  lineage: {
+    artifact_id: string;
+    pdf_sha256: string;
+    transcription_id: string;
+    physical_page_count: number;
+    document_physical_pages: PageRange;
+  };
+  retrievable_units: UnitManifestItem[];
+  pdf_display: {
+    allowed_physical_pages: PageRange;
+  };
+}
+
+interface ReaderUnitResponse {
+  contract_id: "legal-source-reader/v1/reader-unit";
+  access: "authenticated";
+  law_uuid: string;
+  country_route: string;
+  source_mapping_id: string;
+  artifact_id: string;
+  pdf_sha256: string;
+  transcription_id: string;
+  official_source: OfficialSourceResponse;
+  unit: ResponseUnitReference & {
+    risk: RiskState;
+    transcription_text: string;
+  };
+  pdf_display: {
+    allowed_physical_pages: PageRange;
+  };
+}
+
+interface ResolvedCitationResponse extends ResponseUnitReference {
+  contract_id: "legal-source-reader/v1/legal-citation";
+  access: "authenticated";
+  law_uuid: string;
+  country_route: string;
+  resolution_kind: "structural_unit" | "physical_page";
+  source_mapping_id: string;
+  pdf_sha256: string;
+  transcription_id: string;
+  official_source: OfficialSourceResponse;
+  reader_location: string;
+  risk: RiskState;
+}
+
+interface OfficialSourceCitationResponse {
+  contract_id: "legal-source-reader/v1/legal-citation";
+  access: "authenticated";
+  law_uuid: string;
+  country_route: string;
+  resolution_kind: "official_source";
+  source_mapping_id: string;
+  official_source: OfficialSourceResponse;
+}
+
+type LegalSourceReaderResponse =
+  | PublicOutlineResponse
+  | ReaderMetadataResponse
+  | ReaderUnitResponse
+  | ResolvedCitationResponse
+  | OfficialSourceCitationResponse;
+
+interface ResponseBundle {
+  core_fixture: string;
+  responses: LegalSourceReaderResponse[];
+}
+
 function readJson(path: string): unknown {
   return JSON.parse(readFileSync(path, "utf-8"));
 }
@@ -111,7 +224,11 @@ function formatSchemaErrors(schemaErrors: ErrorObject[] | null | undefined): str
       "missingProperty" in error.params
         ? ` ${String(error.params.missingProperty)}`
         : "";
-    return `schema: ${error.instancePath || "/"} ${error.message ?? ""}${missing}`;
+    const additional =
+      "additionalProperty" in error.params
+        ? ` ${String(error.params.additionalProperty)}`
+        : "";
+    return `schema: ${error.instancePath || "/"} ${error.message ?? ""}${missing}${additional}`;
   });
 }
 
@@ -435,6 +552,435 @@ function validateBundle(
   return errors;
 }
 
+function samePageRange(left: PageRange, right: PageRange): boolean {
+  return left.start === right.start && left.end === right.end;
+}
+
+function sameRiskState(response: RiskState, unit: LegalUnit): boolean {
+  return (
+    response.risk_assessment_status === unit.risk_assessment_status &&
+    response.risk_assessment_version === unit.risk_assessment_version &&
+    JSON.stringify([...response.risk_flags].sort()) ===
+      JSON.stringify([...unit.risk_flags].sort())
+  );
+}
+
+function validateOfficialSource(
+  source: OfficialSourceResponse,
+  mapping: SourceMapping,
+  context: string,
+  errors: string[],
+): void {
+  if (
+    source.source_mapping_id !== mapping.source_mapping_id ||
+    source.country_code !== mapping.catalogue_record.country_code ||
+    source.source_code !== mapping.catalogue_record.source_code ||
+    source.source_record_id !== mapping.catalogue_record.source_record_id ||
+    source.official_url !== mapping.catalogue_record.official_url
+  ) {
+    errors.push(`${context} official source does not match its source mapping`);
+  }
+}
+
+function findMapping(
+  bundle: CoreBundle,
+  lawUuid: string,
+  sourceMappingId: string,
+  context: string,
+  errors: string[],
+): SourceMapping | undefined {
+  const mapping = bundle.source_mappings.find(
+    (candidate) => candidate.source_mapping_id === sourceMappingId,
+  );
+  if (mapping === undefined) {
+    errors.push(`${context} references unknown source_mapping_id ${sourceMappingId}`);
+    return undefined;
+  }
+  if (mapping.law_uuid !== lawUuid) {
+    errors.push(
+      `${context} source_mapping_id ${sourceMappingId} belongs to law_uuid ${mapping.law_uuid}, not ${lawUuid}`,
+    );
+  }
+  return mapping;
+}
+
+function findUnit(
+  bundle: CoreBundle,
+  reference: ResponseUnitReference,
+  lawUuid: string,
+  context: string,
+  errors: string[],
+): LegalUnit | undefined {
+  const unit = bundle.legal_units.find(
+    (candidate) => candidate.unit_id === reference.unit_id,
+  );
+  if (unit === undefined) {
+    errors.push(`${context} references unknown unit_id ${reference.unit_id}`);
+    return undefined;
+  }
+  if (unit.law_uuid !== lawUuid) {
+    errors.push(
+      `${context} unit_id ${reference.unit_id} belongs to law_uuid ${unit.law_uuid}, not ${lawUuid}`,
+    );
+  }
+  if (
+    unit.unit_key !== reference.unit_key ||
+    unit.unit_type !== reference.unit_type ||
+    !samePageRange(unit.physical_pages, reference.physical_pages)
+  ) {
+    errors.push(`${context} unit fields do not match unit_id ${reference.unit_id}`);
+  }
+  return unit;
+}
+
+function validateUnitLineage(
+  unit: LegalUnit,
+  sourceMappingId: string,
+  artifactId: string,
+  pdfSha256: string,
+  transcriptionId: string,
+  context: string,
+  errors: string[],
+): void {
+  if (
+    unit.lineage.source_mapping_id !== sourceMappingId ||
+    unit.lineage.artifact_id !== artifactId ||
+    unit.lineage.pdf_sha256 !== pdfSha256 ||
+    unit.lineage.transcription_id !== transcriptionId
+  ) {
+    errors.push(`${context} unit does not belong to the requested reader lineage`);
+  }
+}
+
+function validatePdfLineage(
+  mapping: SourceMapping,
+  artifactId: string,
+  pdfSha256: string,
+  transcriptionId: string,
+  physicalPageCount: number | undefined,
+  documentPhysicalPages: PageRange | undefined,
+  context: string,
+  errors: string[],
+): PublishedArtifact | undefined {
+  const artifact = mapping.artifacts.find(
+    (candidate) => candidate.artifact_id === artifactId,
+  );
+  if (artifact === undefined) {
+    errors.push(`${context} references an artifact outside its source mapping`);
+    return undefined;
+  }
+  const transcription = mapping.transcriptions.find(
+    (candidate) => candidate.transcription_id === transcriptionId,
+  );
+  if (transcription === undefined) {
+    errors.push(`${context} references a transcription outside its source mapping`);
+    return artifact;
+  }
+  if (
+    artifact.pdf_sha256 !== pdfSha256 ||
+    transcription.artifact_id !== artifactId ||
+    transcription.pdf_sha256 !== pdfSha256
+  ) {
+    errors.push(`${context} has inconsistent PDF/transcription lineage`);
+  }
+  if (
+    physicalPageCount !== undefined &&
+    artifact.physical_page_count !== physicalPageCount
+  ) {
+    errors.push(`${context} physical-page count does not match its artifact`);
+  }
+  if (
+    documentPhysicalPages !== undefined &&
+    (artifact.document_physical_pages === null ||
+      !samePageRange(artifact.document_physical_pages, documentPhysicalPages))
+  ) {
+    errors.push(`${context} legal-instrument page span does not match its artifact`);
+  }
+  return artifact;
+}
+
+function scanPublicDisclosure(
+  value: unknown,
+  path: string,
+  errors: string[],
+): void {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) =>
+      scanPublicDisclosure(item, `${path}/${index}`, errors),
+    );
+    return;
+  }
+  if (value === null || typeof value !== "object") {
+    return;
+  }
+
+  const forbidden = new Set([
+    "transcription_text",
+    "ocr",
+    "ocr_text",
+    "excerpt",
+    "excerpts",
+    "chunks",
+    "embeddings",
+    "storage_credentials",
+    "protected_credentials",
+  ]);
+  for (const [key, child] of Object.entries(value)) {
+    if (forbidden.has(key)) {
+      errors.push(`public response contains forbidden field ${path}/${key}`);
+    }
+    scanPublicDisclosure(child, `${path}/${key}`, errors);
+  }
+}
+
+function validateResponseBundle(
+  input: unknown,
+  responseValidator: ValidateFunction,
+  coreBundle: CoreBundle,
+): string[] {
+  if (
+    input === null ||
+    typeof input !== "object" ||
+    !Array.isArray((input as { responses?: unknown }).responses)
+  ) {
+    return ["response fixture must contain a responses array"];
+  }
+
+  const responseBundle = input as ResponseBundle;
+  const errors: string[] = [];
+  const documents = new Map(
+    coreBundle.legal_documents.map((document) => [document.law_uuid, document]),
+  );
+
+  responseBundle.responses.forEach((response, index) => {
+    const context = `response[${index}] ${response.contract_id ?? "unknown"}`;
+    if (!responseValidator(response)) {
+      errors.push(
+        ...formatSchemaErrors(responseValidator.errors).map(
+          (error) => `${context} ${error}`,
+        ),
+      );
+      return;
+    }
+
+    const document = documents.get(response.law_uuid);
+    if (document === undefined) {
+      errors.push(`${context} references unknown law_uuid ${response.law_uuid}`);
+      return;
+    }
+
+    if (response.contract_id === "legal-source-reader/v1/public-outline") {
+      scanPublicDisclosure(response, context, errors);
+      for (const outlineUnit of response.outline) {
+        findUnit(coreBundle, outlineUnit, response.law_uuid, context, errors);
+      }
+      return;
+    }
+
+    if (response.contract_id === "legal-source-reader/v1/reader-metadata") {
+      if (JSON.stringify(response.canonical_metadata) !== JSON.stringify(document)) {
+        errors.push(`${context} canonical metadata does not match law_uuid`);
+      }
+      const mapping = findMapping(
+        coreBundle,
+        response.law_uuid,
+        response.official_source.source_mapping_id,
+        context,
+        errors,
+      );
+      if (mapping === undefined) {
+        return;
+      }
+      validateOfficialSource(response.official_source, mapping, context, errors);
+      validatePdfLineage(
+        mapping,
+        response.lineage.artifact_id,
+        response.lineage.pdf_sha256,
+        response.lineage.transcription_id,
+        response.lineage.physical_page_count,
+        response.lineage.document_physical_pages,
+        context,
+        errors,
+      );
+      if (
+        !samePageRange(
+          response.pdf_display.allowed_physical_pages,
+          response.lineage.document_physical_pages,
+        )
+      ) {
+        errors.push(`${context} PDF display range exceeds the legal-instrument span`);
+      }
+
+      const expectedUnitIds = coreBundle.legal_units
+        .filter(
+          (unit) =>
+            unit.law_uuid === response.law_uuid &&
+            unit.lineage.source_mapping_id === mapping.source_mapping_id &&
+            unit.lineage.artifact_id === response.lineage.artifact_id &&
+            unit.lineage.transcription_id === response.lineage.transcription_id,
+        )
+        .map((unit) => unit.unit_id)
+        .sort();
+      const manifestUnitIds = response.retrievable_units
+        .map((unit) => unit.unit_id)
+        .sort();
+      if (JSON.stringify(expectedUnitIds) !== JSON.stringify(manifestUnitIds)) {
+        errors.push(`${context} retrievable-unit manifest is incomplete or extraneous`);
+      }
+      for (const manifestUnit of response.retrievable_units) {
+        const unit = findUnit(
+          coreBundle,
+          manifestUnit,
+          response.law_uuid,
+          context,
+          errors,
+        );
+        if (unit === undefined) {
+          continue;
+        }
+        validateUnitLineage(
+          unit,
+          mapping.source_mapping_id,
+          response.lineage.artifact_id,
+          response.lineage.pdf_sha256,
+          response.lineage.transcription_id,
+          context,
+          errors,
+        );
+        if (!sameRiskState(manifestUnit.risk, unit)) {
+          errors.push(`${context} risk state does not match unit_id ${unit.unit_id}`);
+        }
+      }
+      return;
+    }
+
+    if (response.contract_id === "legal-source-reader/v1/reader-unit") {
+      const mapping = findMapping(
+        coreBundle,
+        response.law_uuid,
+        response.source_mapping_id,
+        context,
+        errors,
+      );
+      if (mapping === undefined) {
+        return;
+      }
+      validateOfficialSource(response.official_source, mapping, context, errors);
+      const artifact = validatePdfLineage(
+        mapping,
+        response.artifact_id,
+        response.pdf_sha256,
+        response.transcription_id,
+        undefined,
+        undefined,
+        context,
+        errors,
+      );
+      if (
+        artifact?.document_physical_pages !== null &&
+        artifact?.document_physical_pages !== undefined &&
+        !samePageRange(
+          response.pdf_display.allowed_physical_pages,
+          artifact.document_physical_pages,
+        )
+      ) {
+        errors.push(`${context} PDF display range exceeds the legal-instrument span`);
+      }
+      const unit = findUnit(
+        coreBundle,
+        response.unit,
+        response.law_uuid,
+        context,
+        errors,
+      );
+      if (unit === undefined) {
+        return;
+      }
+      validateUnitLineage(
+        unit,
+        response.source_mapping_id,
+        response.artifact_id,
+        response.pdf_sha256,
+        response.transcription_id,
+        context,
+        errors,
+      );
+      if (!sameRiskState(response.unit.risk, unit)) {
+        errors.push(`${context} risk state does not match unit_id ${unit.unit_id}`);
+      }
+      if (response.unit.transcription_text !== unit.transcription_text) {
+        errors.push(`${context} transcription text does not match unit_id ${unit.unit_id}`);
+      }
+      return;
+    }
+
+    const mapping = findMapping(
+      coreBundle,
+      response.law_uuid,
+      response.source_mapping_id,
+      context,
+      errors,
+    );
+    if (mapping === undefined) {
+      return;
+    }
+    validateOfficialSource(response.official_source, mapping, context, errors);
+    if (response.resolution_kind === "official_source") {
+      return;
+    }
+
+    const unit = findUnit(
+      coreBundle,
+      response,
+      response.law_uuid,
+      context,
+      errors,
+    );
+    if (unit === undefined) {
+      return;
+    }
+    validatePdfLineage(
+      mapping,
+      unit.lineage.artifact_id,
+      response.pdf_sha256,
+      response.transcription_id,
+      undefined,
+      undefined,
+      context,
+      errors,
+    );
+    validateUnitLineage(
+      unit,
+      response.source_mapping_id,
+      unit.lineage.artifact_id,
+      response.pdf_sha256,
+      response.transcription_id,
+      context,
+      errors,
+    );
+    if (!sameRiskState(response.risk, unit)) {
+      errors.push(`${context} risk state does not match unit_id ${unit.unit_id}`);
+    }
+    const expectedReaderPrefix = `/${response.country_route}/leyes/${response.law_uuid}/reader?`;
+    if (!response.reader_location.startsWith(expectedReaderPrefix)) {
+      errors.push(`${context} reader location does not match its law and country route`);
+    }
+    const readerLocation = new URL(
+      response.reader_location,
+      "https://reader.invalid",
+    );
+    if (
+      readerLocation.searchParams.get("unit") !== response.unit_key ||
+      Number(readerLocation.searchParams.get("page")) !==
+        response.physical_pages.start
+    ) {
+      errors.push(`${context} reader location does not match its unit and page`);
+    }
+  });
+
+  return errors;
+}
+
 function applyInvalidCase(base: unknown, testCase: InvalidCase): unknown {
   const copy = structuredClone(base) as Record<string, unknown>;
   let cursor: unknown = copy;
@@ -489,16 +1035,41 @@ export function validateLegalSourceReaderV1(
   const contractRoot = join(root, "data", "legal-source-reader", "v1");
   const fixturesRoot = join(contractRoot, "fixtures");
   const schema = readJson(join(contractRoot, "schema.json"));
+  const responsesSchema = readJson(join(contractRoot, "responses.schema.json"));
   const validFixture = readJson(join(fixturesRoot, "valid-core-bundle.json"));
+  const validResponses = readJson(
+    join(fixturesRoot, "valid-response-bundle.json"),
+  ) as ResponseBundle;
   const invalidCases = readJson(
     join(fixturesRoot, "invalid-cases.json"),
   ) as InvalidCasesFile;
+  const invalidResponseCases = readJson(
+    join(fixturesRoot, "invalid-response-cases.json"),
+  ) as InvalidCasesFile;
   const ajv = new Ajv2020({ allErrors: true, strict: false });
   const schemaValidator = ajv.compile(schema);
+  const responseValidator = ajv.compile(responsesSchema);
   const errors = validateBundle(validFixture, schemaValidator, taxonomy);
+  errors.push(
+    ...validateResponseBundle(
+      validResponses,
+      responseValidator,
+      validFixture as CoreBundle,
+    ),
+  );
 
   if (invalidCases.base_fixture !== "valid-core-bundle.json") {
     errors.push("invalid-cases.json must use valid-core-bundle.json as its base");
+  }
+  if (validResponses.core_fixture !== "valid-core-bundle.json") {
+    errors.push(
+      "valid-response-bundle.json must use valid-core-bundle.json as its core",
+    );
+  }
+  if (invalidResponseCases.base_fixture !== "valid-response-bundle.json") {
+    errors.push(
+      "invalid-response-cases.json must use valid-response-bundle.json as its base",
+    );
   }
 
   const fixtureBundle = validFixture as CoreBundle;
@@ -524,6 +1095,35 @@ export function validateLegalSourceReaderV1(
     if (!caseErrors.some((error) => error.includes(testCase.expected_error))) {
       errors.push(
         `negative fixture ${testCase.name} did not produce expected error "${testCase.expected_error}"; got: ${caseErrors.join(" | ")}`,
+      );
+    }
+  }
+
+  for (const response of validResponses.responses) {
+    if (
+      response.contract_id === "legal-source-reader/v1/reader-unit" &&
+      !response.unit.transcription_text.startsWith("[SYNTHETIC]")
+    ) {
+      errors.push(
+        `response fixture unit_id ${response.unit.unit_id} does not mark its transcription text synthetic`,
+      );
+    }
+  }
+
+  for (const testCase of invalidResponseCases.cases) {
+    const invalidFixture = applyInvalidCase(validResponses, testCase);
+    const caseErrors = validateResponseBundle(
+      invalidFixture,
+      responseValidator,
+      validFixture as CoreBundle,
+    );
+    if (caseErrors.length === 0) {
+      errors.push(`negative response fixture ${testCase.name} unexpectedly passed`);
+      continue;
+    }
+    if (!caseErrors.some((error) => error.includes(testCase.expected_error))) {
+      errors.push(
+        `negative response fixture ${testCase.name} did not produce expected error "${testCase.expected_error}"; got: ${caseErrors.join(" | ")}`,
       );
     }
   }

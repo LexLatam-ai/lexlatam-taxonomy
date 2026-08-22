@@ -1,0 +1,508 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/LexLatam-ai/lexlatam-taxonomy/blob/main/data/legal-source-reader/v1/responses.schema.json",
+  "title": "LexLatam legal source reader V1 response contracts",
+  "description": "Public outline, authenticated reader metadata, one-unit reader, and citation response contracts built on the legal-source-reader/v1 producer core.",
+  "oneOf": [
+    { "$ref": "#/$defs/publicOutlineResponse" },
+    { "$ref": "#/$defs/readerMetadataResponse" },
+    { "$ref": "#/$defs/readerUnitResponse" },
+    { "$ref": "#/$defs/legalCitationResponse" }
+  ],
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "httpsUrl": {
+      "type": "string",
+      "pattern": "^https://[^\\s]+$"
+    },
+    "relativeReaderLocation": {
+      "type": "string",
+      "description": "Same-application relative location. Origins and login-return policy are frozen separately.",
+      "pattern": "^/[a-z0-9-]+/leyes/[0-9a-f-]+/reader\\?unit=[a-z0-9%._-]+&page=[1-9][0-9]*$"
+    },
+    "countryRoute": {
+      "type": "string",
+      "description": "Stable lowercase country slug used by Leyes routes.",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "physicalPageRange": {
+      "type": "object",
+      "required": ["start", "end"],
+      "additionalProperties": false,
+      "properties": {
+        "start": { "type": "integer", "minimum": 1 },
+        "end": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "unitKey": {
+      "type": "string",
+      "pattern": "^(article|section|considering|operative|chapter|annex|table|page|other):[a-z0-9][a-z0-9._-]*$"
+    },
+    "unitType": {
+      "enum": [
+        "article",
+        "section",
+        "considering",
+        "operative",
+        "chapter",
+        "annex",
+        "table",
+        "page",
+        "other"
+      ]
+    },
+    "structuralUnitType": {
+      "enum": [
+        "article",
+        "section",
+        "considering",
+        "operative",
+        "chapter",
+        "annex",
+        "table",
+        "other"
+      ]
+    },
+    "riskFlag": {
+      "enum": [
+        "table",
+        "handwriting",
+        "multi_column",
+        "checkbox",
+        "form",
+        "numeric_dense",
+        "low_coverage",
+        "unknown_structure"
+      ]
+    },
+    "riskState": {
+      "type": "object",
+      "required": [
+        "risk_assessment_status",
+        "risk_flags"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "risk_assessment_status": {
+          "enum": ["unchecked", "assessed"]
+        },
+        "risk_assessment_version": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": ".*\\S.*"
+        },
+        "risk_flags": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/riskFlag" }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "risk_assessment_status": { "const": "assessed" }
+            },
+            "required": ["risk_assessment_status"]
+          },
+          "then": { "required": ["risk_assessment_version"] }
+        },
+        {
+          "if": {
+            "properties": {
+              "risk_assessment_status": { "const": "unchecked" }
+            },
+            "required": ["risk_assessment_status"]
+          },
+          "then": {
+            "not": { "required": ["risk_assessment_version"] }
+          }
+        }
+      ]
+    },
+    "officialSource": {
+      "type": "object",
+      "required": [
+        "source_mapping_id",
+        "country_code",
+        "source_code",
+        "source_record_id",
+        "official_url"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "source_mapping_id": { "$ref": "#/$defs/uuid" },
+        "country_code": {
+          "type": "string",
+          "pattern": "^[a-z]{2}$"
+        },
+        "source_code": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]*$"
+        },
+        "source_record_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": ".*\\S.*"
+        },
+        "official_url": { "$ref": "#/$defs/httpsUrl" }
+      }
+    },
+    "readerLineage": {
+      "type": "object",
+      "required": [
+        "artifact_id",
+        "pdf_sha256",
+        "transcription_id",
+        "physical_page_count",
+        "document_physical_pages"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": { "$ref": "#/$defs/uuid" },
+        "pdf_sha256": { "$ref": "#/$defs/sha256" },
+        "transcription_id": { "$ref": "#/$defs/uuid" },
+        "physical_page_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "document_physical_pages": {
+          "$ref": "#/$defs/physicalPageRange"
+        }
+      }
+    },
+    "pdfDisplayReference": {
+      "type": "object",
+      "required": [
+        "kind",
+        "display_url",
+        "expires_at",
+        "allowed_physical_pages"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": ["authenticated_proxy", "short_lived_url"]
+        },
+        "display_url": { "$ref": "#/$defs/httpsUrl" },
+        "expires_at": {
+          "type": ["string", "null"],
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+        },
+        "allowed_physical_pages": {
+          "$ref": "#/$defs/physicalPageRange"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "kind": { "const": "short_lived_url" } },
+            "required": ["kind"]
+          },
+          "then": {
+            "properties": {
+              "expires_at": {
+                "type": "string",
+                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "kind": { "const": "authenticated_proxy" } },
+            "required": ["kind"]
+          },
+          "then": {
+            "properties": { "expires_at": { "type": "null" } }
+          }
+        }
+      ]
+    },
+    "outlineUnit": {
+      "type": "object",
+      "required": [
+        "unit_id",
+        "unit_key",
+        "unit_type",
+        "label",
+        "physical_pages"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "unit_id": {
+          "type": "string",
+          "pattern": "^lsr:v1:[0-9a-f-]+:[0-9a-f-]+:[a-z][a-z0-9_]*:[a-z0-9][a-z0-9._-]*$"
+        },
+        "unit_key": { "$ref": "#/$defs/unitKey" },
+        "unit_type": { "$ref": "#/$defs/structuralUnitType" },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": ".*\\S.*"
+        },
+        "physical_pages": { "$ref": "#/$defs/physicalPageRange" }
+      }
+    },
+    "unitManifestItem": {
+      "type": "object",
+      "required": [
+        "unit_id",
+        "unit_key",
+        "unit_type",
+        "physical_pages",
+        "risk"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "unit_id": {
+          "type": "string",
+          "pattern": "^lsr:v1:[0-9a-f-]+:[0-9a-f-]+:[a-z][a-z0-9_]*:[a-z0-9][a-z0-9._-]*$"
+        },
+        "unit_key": { "$ref": "#/$defs/unitKey" },
+        "unit_type": { "$ref": "#/$defs/unitType" },
+        "physical_pages": { "$ref": "#/$defs/physicalPageRange" },
+        "risk": { "$ref": "#/$defs/riskState" }
+      }
+    },
+    "publicOutlineResponse": {
+      "type": "object",
+      "required": [
+        "contract_id",
+        "access",
+        "law_uuid",
+        "country_route",
+        "outline"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "contract_id": {
+          "const": "legal-source-reader/v1/public-outline"
+        },
+        "access": { "const": "public" },
+        "law_uuid": { "$ref": "#/$defs/uuid" },
+        "country_route": { "$ref": "#/$defs/countryRoute" },
+        "outline": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/outlineUnit" }
+        }
+      }
+    },
+    "readerMetadataResponse": {
+      "type": "object",
+      "required": [
+        "contract_id",
+        "access",
+        "law_uuid",
+        "country_route",
+        "canonical_metadata",
+        "official_source",
+        "lineage",
+        "retrievable_units",
+        "pdf_display",
+        "warning"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "contract_id": {
+          "const": "legal-source-reader/v1/reader-metadata"
+        },
+        "access": { "const": "authenticated" },
+        "law_uuid": { "$ref": "#/$defs/uuid" },
+        "country_route": { "$ref": "#/$defs/countryRoute" },
+        "canonical_metadata": {
+          "$ref": "https://github.com/LexLatam-ai/lexlatam-taxonomy/blob/main/data/legal-source-reader/v1/schema.json#/$defs/legalDocument"
+        },
+        "official_source": { "$ref": "#/$defs/officialSource" },
+        "lineage": { "$ref": "#/$defs/readerLineage" },
+        "retrievable_units": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/unitManifestItem" }
+        },
+        "pdf_display": { "$ref": "#/$defs/pdfDisplayReference" },
+        "warning": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": ".*\\S.*"
+        }
+      }
+    },
+    "readerUnit": {
+      "type": "object",
+      "required": [
+        "unit_id",
+        "unit_key",
+        "unit_type",
+        "physical_pages",
+        "risk",
+        "transcription_text"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "unit_id": {
+          "type": "string",
+          "pattern": "^lsr:v1:[0-9a-f-]+:[0-9a-f-]+:[a-z][a-z0-9_]*:[a-z0-9][a-z0-9._-]*$"
+        },
+        "unit_key": { "$ref": "#/$defs/unitKey" },
+        "unit_type": { "$ref": "#/$defs/unitType" },
+        "physical_pages": { "$ref": "#/$defs/physicalPageRange" },
+        "risk": { "$ref": "#/$defs/riskState" },
+        "transcription_text": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "readerUnitResponse": {
+      "type": "object",
+      "required": [
+        "contract_id",
+        "access",
+        "law_uuid",
+        "country_route",
+        "source_mapping_id",
+        "artifact_id",
+        "pdf_sha256",
+        "transcription_id",
+        "official_source",
+        "unit",
+        "pdf_display",
+        "warning"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "contract_id": {
+          "const": "legal-source-reader/v1/reader-unit"
+        },
+        "access": { "const": "authenticated" },
+        "law_uuid": { "$ref": "#/$defs/uuid" },
+        "country_route": { "$ref": "#/$defs/countryRoute" },
+        "source_mapping_id": { "$ref": "#/$defs/uuid" },
+        "artifact_id": { "$ref": "#/$defs/uuid" },
+        "pdf_sha256": { "$ref": "#/$defs/sha256" },
+        "transcription_id": { "$ref": "#/$defs/uuid" },
+        "official_source": { "$ref": "#/$defs/officialSource" },
+        "unit": { "$ref": "#/$defs/readerUnit" },
+        "pdf_display": { "$ref": "#/$defs/pdfDisplayReference" },
+        "warning": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": ".*\\S.*"
+        }
+      }
+    },
+    "resolvedCitation": {
+      "type": "object",
+      "required": [
+        "contract_id",
+        "access",
+        "law_uuid",
+        "country_route",
+        "resolution_kind",
+        "source_mapping_id",
+        "unit_id",
+        "unit_key",
+        "unit_type",
+        "physical_pages",
+        "pdf_sha256",
+        "transcription_id",
+        "official_source",
+        "reader_location",
+        "risk"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "contract_id": {
+          "const": "legal-source-reader/v1/legal-citation"
+        },
+        "access": { "const": "authenticated" },
+        "law_uuid": { "$ref": "#/$defs/uuid" },
+        "country_route": { "$ref": "#/$defs/countryRoute" },
+        "resolution_kind": {
+          "enum": ["structural_unit", "physical_page"]
+        },
+        "source_mapping_id": { "$ref": "#/$defs/uuid" },
+        "unit_id": {
+          "type": "string",
+          "pattern": "^lsr:v1:[0-9a-f-]+:[0-9a-f-]+:[a-z][a-z0-9_]*:[a-z0-9][a-z0-9._-]*$"
+        },
+        "unit_key": { "$ref": "#/$defs/unitKey" },
+        "unit_type": { "$ref": "#/$defs/unitType" },
+        "physical_pages": { "$ref": "#/$defs/physicalPageRange" },
+        "pdf_sha256": { "$ref": "#/$defs/sha256" },
+        "transcription_id": { "$ref": "#/$defs/uuid" },
+        "official_source": { "$ref": "#/$defs/officialSource" },
+        "reader_location": { "$ref": "#/$defs/relativeReaderLocation" },
+        "risk": { "$ref": "#/$defs/riskState" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "resolution_kind": { "const": "physical_page" }
+            },
+            "required": ["resolution_kind"]
+          },
+          "then": {
+            "properties": {
+              "unit_type": { "const": "page" },
+              "unit_key": { "pattern": "^page:[1-9][0-9]*$" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "resolution_kind": { "const": "structural_unit" }
+            },
+            "required": ["resolution_kind"]
+          },
+          "then": {
+            "properties": {
+              "unit_type": { "$ref": "#/$defs/structuralUnitType" }
+            }
+          }
+        }
+      ]
+    },
+    "officialSourceCitation": {
+      "type": "object",
+      "description": "Fail-safe citation when no verified source-bound unit or page mapping exists. Unit, PDF, transcription, reader, and risk fields are intentionally absent.",
+      "required": [
+        "contract_id",
+        "access",
+        "law_uuid",
+        "country_route",
+        "resolution_kind",
+        "source_mapping_id",
+        "official_source"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "contract_id": {
+          "const": "legal-source-reader/v1/legal-citation"
+        },
+        "access": { "const": "authenticated" },
+        "law_uuid": { "$ref": "#/$defs/uuid" },
+        "country_route": { "$ref": "#/$defs/countryRoute" },
+        "resolution_kind": { "const": "official_source" },
+        "source_mapping_id": { "$ref": "#/$defs/uuid" },
+        "official_source": { "$ref": "#/$defs/officialSource" }
+      }
+    },
+    "legalCitationResponse": {
+      "oneOf": [
+        { "$ref": "#/$defs/resolvedCitation" },
+        { "$ref": "#/$defs/officialSourceCitation" }
+      ]
+    }
+  }
+}
