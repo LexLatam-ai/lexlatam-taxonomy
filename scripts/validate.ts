@@ -143,5 +143,5 @@ if (errors.length > 0) {
 }
 
 console.log(
-  "✓ document types, legal subjects, and legal-source-reader/v1 core are valid.",
+  "✓ document types, legal subjects, and legal-source-reader/v1 contracts are valid.",
 );

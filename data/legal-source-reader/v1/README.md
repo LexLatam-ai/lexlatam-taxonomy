@@ -1,8 +1,8 @@
-# Legal source reader V1 producer core
+# Legal source reader V1 contracts
 
-This directory defines the additive producer-side semantic core for
-`legal-source-reader/v1`. It is a data contract, not a database schema or API
-response model.
+This directory defines the additive producer-side semantic core and response
+contracts for `legal-source-reader/v1`. They are data contracts, not database
+schemas or authorization implementations.
 
 ## Scope
 
@@ -21,6 +21,26 @@ The contract intentionally supports the currently observed one-source,
 one-artifact, and one-transcription case without placing a maximum on source
 mappings, artifacts, or transcription versions. Repeated or alternate
 artifacts were not observed in the audited cohort; they are not prohibited.
+
+The response schema defines four boundaries:
+
+- `public-outline` returns only public-presentable, source-bound structural
+  navigation.
+  An empty outline is valid, and physical page units are not exposed as an
+  automatic public table of contents.
+- `reader-metadata` is authenticated and returns canonical metadata, official
+  source provenance, exact PDF/transcription identity, the complete retrievable
+  unit manifest, a bounded PDF display reference, and the transcription
+  warning.
+- `reader-unit` is authenticated and returns exactly one requested unit with
+  its immutable lineage, risk state, official source, bounded PDF display
+  reference, and protected transcription text.
+- `legal-citation` is authenticated and resolves to a deterministic structural
+  unit, a verified `page:N` unit, or the official source alone.
+
+The producer core remains in `schema.json`. The response contracts are in
+`responses.schema.json`; they reference the core legal-document definition and
+are validated against the same synthetic core fixture.
 
 ## Identity and provenance rules
 
@@ -76,6 +96,41 @@ Every legal unit carries `risk_assessment_status` and `risk_flags`.
 The bounded V1 flags are `table`, `handwriting`, `multi_column`, `checkbox`,
 `form`, `numeric_dense`, `low_coverage`, and `unknown_structure`.
 
+## Public and protected response boundary
+
+The public outline cannot contain transcription text, OCR fields, excerpts,
+chunks, embeddings, protected credentials, PDF display references, or a page
+number index. An empty array is the correct response when no useful
+source-bound public structure exists.
+
+The reader metadata and reader-unit contracts require authenticated access.
+The metadata manifest contains unit identity, physical pages, and risk state,
+but no transcription text. The per-unit contract has one singular `unit`
+property and rejects bulk or whole-document response fields. Its unit must
+belong to the requested law, source mapping, artifact, PDF, and transcription.
+
+PDF display references are limited to the legal instrument's mapped physical
+page span. They may identify an authenticated proxy or a short-lived URL. They
+do not expose storage credentials or expand the contract to anonymous PDF
+navigation.
+
+## Citation resolution
+
+Citation resolution follows one fail-safe order:
+
+1. Return a deterministic structural unit when its source binding is proven.
+2. Otherwise return a verified 1-based `page:N` unit.
+3. Otherwise return only the official source.
+
+The official-source-only form intentionally has no unit key, physical page,
+PDF hash, transcription ID, reader location, or risk state. Consumers must not
+invent an Article or retain stale reader fields when resolution falls back to
+the official source.
+
+Resolved citations retain the law identity, country route, source mapping,
+source-bound unit, 1-based physical pages, PDF hash, transcription ID, official
+source, same-application reader location, and unit risk state.
+
 ## Collector compatibility boundary
 
 Current collector operational fields must be adapted deliberately:
@@ -104,16 +159,21 @@ pnpm run validate
 
 The validator checks the JSON Schema, taxonomy references, source and lineage
 cross-references, deterministic unit identity, 1-based page ranges, required
-page fallbacks, and risk-state combinations. It also proves that the negative
-fixtures fail for wrong-source units, invalid page ranges, missing lineage,
-invalid risk state, missing page fallback, and non-deterministic unit identity.
+page fallbacks, response membership, public disclosure boundaries, citation
+fallback shapes, and risk-state combinations. It also proves that the negative
+fixtures fail for anonymous protected responses, public text disclosure,
+wrong-law and wrong-source units, invalid page ranges, missing mappings,
+unchecked risk with an assessment version, invented official-source fallback
+fields, bulk reader responses, missing lineage, missing page fallback, and
+non-deterministic unit identity.
 
 All committed transcription text is marked `[SYNTHETIC]`. The fixtures contain
 no protected OCR.
 
 ## Explicit non-goals
 
-This contract authorizes no migration, backfill, merge, inferred legacy
-relationship, public outline, authenticated reader response, citation
-response, legal-subject classification, legal-relationship graph, or
-deployment. Those require their own contracts and review gates.
+These contracts authorize no migration, backfill, merge, inferred legacy
+relationship, endpoint implementation, authentication change, origin
+allowlist, publication-policy freeze, anonymous PDF preview, legal-subject
+classification, legal-relationship graph, or deployment. Those require their
+own implementation or review gates.

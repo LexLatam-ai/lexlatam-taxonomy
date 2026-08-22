@@ -1,0 +1,75 @@
+{
+  "base_fixture": "valid-response-bundle.json",
+  "cases": [
+    {
+      "name": "anonymous-protected-access",
+      "operation": "replace",
+      "path": ["responses", 2, "access"],
+      "value": "public",
+      "expected_error": "must be equal to constant"
+    },
+    {
+      "name": "public-field-disclosure",
+      "operation": "replace",
+      "path": ["responses", 0, "transcription_text"],
+      "value": "[SYNTHETIC] This field must never be public.",
+      "expected_error": "transcription_text"
+    },
+    {
+      "name": "wrong-law-reader-unit",
+      "operation": "replace",
+      "path": ["responses", 3, "law_uuid"],
+      "value": "55555555-5555-4555-8555-555555555555",
+      "expected_error": "belongs to law_uuid"
+    },
+    {
+      "name": "wrong-source-reader-unit",
+      "operation": "replace",
+      "path": ["responses", 3, "source_mapping_id"],
+      "value": "66666666-6666-4666-8666-666666666666",
+      "expected_error": "belongs to law_uuid"
+    },
+    {
+      "name": "invalid-reader-page",
+      "operation": "replace",
+      "path": ["responses", 3, "unit", "physical_pages", "start"],
+      "value": 0,
+      "expected_error": "must be >= 1"
+    },
+    {
+      "name": "missing-source-mapping",
+      "operation": "replace",
+      "path": ["responses", 3, "source_mapping_id"],
+      "value": "99999999-9999-4999-8999-999999999999",
+      "expected_error": "references unknown source_mapping_id"
+    },
+    {
+      "name": "unchecked-risk-with-assessment-version",
+      "operation": "replace",
+      "path": ["responses", 3, "unit", "risk", "risk_assessment_version"],
+      "value": "risk-rules/v1",
+      "expected_error": "must NOT be valid"
+    },
+    {
+      "name": "official-source-fallback-invents-unit",
+      "operation": "replace",
+      "path": ["responses", 6, "unit_key"],
+      "value": "article:1",
+      "expected_error": "unit_key"
+    },
+    {
+      "name": "reader-location-points-to-wrong-page",
+      "operation": "replace",
+      "path": ["responses", 4, "reader_location"],
+      "value": "/panama/leyes/11111111-1111-4111-8111-111111111111/reader?unit=article%3a1&page=2",
+      "expected_error": "reader location does not match its unit and page"
+    },
+    {
+      "name": "bulk-reader-response",
+      "operation": "replace",
+      "path": ["responses", 3, "units"],
+      "value": [],
+      "expected_error": "units"
+    }
+  ]
+}
