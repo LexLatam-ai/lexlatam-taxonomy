@@ -61,8 +61,15 @@
       "name": "reader-location-points-to-wrong-page",
       "operation": "replace",
       "path": ["responses", 4, "reader_location"],
-      "value": "/panama/leyes/11111111-1111-4111-8111-111111111111/reader?unit=article%3a1&page=2",
+      "value": "/panama/leyes/11111111-1111-4111-8111-111111111111/lector?unidad=articulo%3A1&pagina=2",
       "expected_error": "reader location does not match its unit and page"
+    },
+    {
+      "name": "english-reader-location-is-not-canonical",
+      "operation": "replace",
+      "path": ["responses", 4, "reader_location"],
+      "value": "/panama/leyes/11111111-1111-4111-8111-111111111111/reader?unit=article%3A1&page=1",
+      "expected_error": "must match pattern"
     },
     {
       "name": "bulk-reader-response",

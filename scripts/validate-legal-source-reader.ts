@@ -214,6 +214,30 @@ interface ResponseBundle {
   responses: LegalSourceReaderResponse[];
 }
 
+const PUBLIC_UNIT_TYPE_BY_INTERNAL: Record<string, string> = {
+  article: "articulo",
+  section: "seccion",
+  considering: "considerando",
+  operative: "parte-resolutiva",
+  chapter: "capitulo",
+  annex: "anexo",
+  table: "tabla",
+  page: "pagina",
+  other: "otro",
+};
+
+function toPublicUnitKey(unitKey: string): string | undefined {
+  const separator = unitKey.indexOf(":");
+  if (separator <= 0) {
+    return undefined;
+  }
+  const publicType = PUBLIC_UNIT_TYPE_BY_INTERNAL[unitKey.slice(0, separator)];
+  if (publicType === undefined) {
+    return undefined;
+  }
+  return `${publicType}:${unitKey.slice(separator + 1)}`;
+}
+
 function readJson(path: string): unknown {
   return JSON.parse(readFileSync(path, "utf-8"));
 }
@@ -961,7 +985,7 @@ function validateResponseBundle(
     if (!sameRiskState(response.risk, unit)) {
       errors.push(`${context} risk state does not match unit_id ${unit.unit_id}`);
     }
-    const expectedReaderPrefix = `/${response.country_route}/leyes/${response.law_uuid}/reader?`;
+    const expectedReaderPrefix = `/${response.country_route}/leyes/${response.law_uuid}/lector?`;
     if (!response.reader_location.startsWith(expectedReaderPrefix)) {
       errors.push(`${context} reader location does not match its law and country route`);
     }
@@ -970,8 +994,9 @@ function validateResponseBundle(
       "https://reader.invalid",
     );
     if (
-      readerLocation.searchParams.get("unit") !== response.unit_key ||
-      Number(readerLocation.searchParams.get("page")) !==
+      readerLocation.searchParams.get("unidad") !==
+        toPublicUnitKey(response.unit_key) ||
+      Number(readerLocation.searchParams.get("pagina")) !==
         response.physical_pages.start
     ) {
       errors.push(`${context} reader location does not match its unit and page`);

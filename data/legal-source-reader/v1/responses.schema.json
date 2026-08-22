@@ -24,8 +24,8 @@
     },
     "relativeReaderLocation": {
       "type": "string",
-      "description": "Same-application relative location. Origins and login-return policy are frozen separately.",
-      "pattern": "^/[a-z0-9-]+/leyes/[0-9a-f-]+/reader\\?unit=[a-z0-9%._-]+&page=[1-9][0-9]*$"
+      "description": "Canonical same-application Spanish reader location. Internal unit keys are translated to their approved public Spanish form.",
+      "pattern": "^/[a-z0-9-]+/leyes/[0-9a-f-]+/lector\\?unidad=(articulo|seccion|considerando|parte-resolutiva|capitulo|anexo|tabla|pagina|otro)%3[Aa][a-z0-9][a-z0-9._-]*&pagina=[1-9][0-9]*$"
     },
     "countryRoute": {
       "type": "string",
