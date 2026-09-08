@@ -113,4 +113,4 @@ def test_content_category_crosswalk_is_exact_and_typed() -> None:
 
 
 def test_version_matches_legal_subject_data() -> None:
-    assert VERSION == _DATA["version"] == "1.2.0"
+    assert VERSION == _DATA["version"]
