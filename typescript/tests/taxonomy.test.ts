@@ -38,6 +38,16 @@ describe("normalize — exact mappings", () => {
   });
 });
 
+describe("normalize — Panama observed native labels", () => {
+  it.each([
+    ["Nota Marginal de Advertencia", "notice"],
+    ["Fallo", "judgment"],
+  ] as const)("normalizes %s through an exact mapping", (native, type) => {
+    expect(normalize(native)).toEqual({ type, subtype: null });
+    expect(data.mappings[native]).toEqual({ type, subtype: null });
+  });
+});
+
 describe("normalize — fallbacks", () => {
   it("resolves an unknown Resolución to other_resolution", () => {
     expect(normalize("Resolución del Pleno")).toEqual({

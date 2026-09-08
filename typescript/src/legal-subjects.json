@@ -1,5 +1,5 @@
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "subjects": {
     "administrative": { "label_es": "Administrativo", "includes": "Actuación, organización y control de la administración pública.", "excludes": "Contrataciones públicas y control constitucional." },
     "banking_finance": { "label_es": "Bancario y financiero", "includes": "Banca, valores, seguros y regulación financiera.", "excludes": "Tributos y relaciones comerciales generales." },

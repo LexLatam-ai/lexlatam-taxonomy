@@ -14,6 +14,7 @@ class DocumentType(str, Enum):
     AGREEMENT = "agreement"
     RESUELTO = "resuelto"
     NOTICE = "notice"
+    JUDGMENT = "judgment"
     CIRCULAR = "circular"
     CONTRACT = "contract"
     ACTA = "acta"
