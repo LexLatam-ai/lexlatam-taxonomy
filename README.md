@@ -68,6 +68,14 @@ Generated files (committed, never hand-edited):
    is **accent- and case-insensitive** (`"RESOLUCION"`, `"resolución"` both match `"Resolución"`).
 4. A string matching nothing resolves to `(unknown, null)`.
 
+`Nota Marginal de Advertencia` maps exactly to `notice`. `Fallo` maps exactly
+to `judgment` (Fallo / Judgment), with no subtype. The existing resolution
+family covers native Resolución instruments; none of its existing types or
+subtypes identifies a judicial judgment. Panama's
+[Órgano Judicial](https://www.organojudicial.gob.pa/cendoj/files/fallos-de-interes?page=3)
+publishes Fallo entries as court decisions, so they have a separate canonical
+type. These mappings introduce no new prefix fallbacks.
+
 ## Public API
 
 Both packages expose the same small, stable surface.

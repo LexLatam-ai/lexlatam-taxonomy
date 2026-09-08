@@ -43,6 +43,18 @@ def test_every_mapping_round_trips(native: str) -> None:
         assert subtype == DocumentSubtype(expected["subtype"])
 
 
+@pytest.mark.parametrize(
+    ("native", "expected"),
+    [
+        ("Nota Marginal de Advertencia", "notice"),
+        ("Fallo", "judgment"),
+    ],
+)
+def test_panama_observed_native_labels(native: str, expected: str) -> None:
+    assert normalize(native) == (DocumentType(expected), None)
+    assert _DATA["mappings"][native] == {"type": expected, "subtype": None}
+
+
 def test_fallback_resolution() -> None:
     assert normalize("Resolución del Pleno") == (
         DocumentType.RESOLUTION,

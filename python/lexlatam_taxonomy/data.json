@@ -1,5 +1,5 @@
 {
-  "version": "1.2.0",
+  "version": "1.3.1",
   "types": {
     "law": { "label_es": "Ley", "label_en": "Law" },
     "decree": { "label_es": "Decreto", "label_en": "Decree" },
@@ -7,6 +7,7 @@
     "agreement": { "label_es": "Acuerdo", "label_en": "Agreement" },
     "resuelto": { "label_es": "Resuelto", "label_en": "Resuelto" },
     "notice": { "label_es": "Aviso", "label_en": "Notice" },
+    "judgment": { "label_es": "Fallo", "label_en": "Judgment" },
     "circular": { "label_es": "Circular", "label_en": "Circular" },
     "contract": { "label_es": "Contrato", "label_en": "Contract" },
     "acta": { "label_es": "Acta", "label_en": "Minutes" },
@@ -107,6 +108,8 @@
     "Acuerdo Municipal": { "type": "agreement", "subtype": "municipal_agreement" },
     "Resuelto": { "type": "resuelto", "subtype": null },
     "Aviso": { "type": "notice", "subtype": null },
+    "Nota Marginal de Advertencia": { "type": "notice", "subtype": null },
+    "Fallo": { "type": "judgment", "subtype": null },
     "Circular": { "type": "circular", "subtype": null },
     "Contrato": { "type": "contract", "subtype": null },
     "Acta": { "type": "acta", "subtype": null },

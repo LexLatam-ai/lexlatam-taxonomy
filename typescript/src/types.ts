@@ -8,6 +8,7 @@ export type DocumentType =
   | "agreement"
   | "resuelto"
   | "notice"
+  | "judgment"
   | "circular"
   | "contract"
   | "acta"
@@ -67,6 +68,7 @@ export const TYPE_LABELS: Record<DocumentType, Labels> = {
   "agreement": { label_es: "Acuerdo", label_en: "Agreement" },
   "resuelto": { label_es: "Resuelto", label_en: "Resuelto" },
   "notice": { label_es: "Aviso", label_en: "Notice" },
+  "judgment": { label_es: "Fallo", label_en: "Judgment" },
   "circular": { label_es: "Circular", label_en: "Circular" },
   "contract": { label_es: "Contrato", label_en: "Contract" },
   "acta": { label_es: "Acta", label_en: "Minutes" },

@@ -100,8 +100,7 @@ describe("legal-subject contract", () => {
     );
   });
 
-  it("keeps both data domains on package version 1.2.0", () => {
+  it("keeps both data domains on the same package version", () => {
     expect(VERSION).toBe(legalSubjects.version);
-    expect(VERSION).toBe("1.2.0");
   });
 });
